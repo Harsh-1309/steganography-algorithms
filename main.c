@@ -6,9 +6,11 @@
 
 #include "util.h"
 #include "image.h"
+#include "constants.h"
 
 #include "algorithms/simple_lsb.h"
 #include "algorithms/pvd_greyscale.h"
+#include "algorithms/pvd_4px.h"
 
 int main(int argc, char** argv){
     if (argc < 2){ 
@@ -31,13 +33,32 @@ int main(int argc, char** argv){
         Image st_img = load_image(img_path);
 
         if(str_case_cmp(steg_algo_used, "simple_lsb") == true){
-            printf("SIMPLE LSB\n");
+            printf("SIMPLE LSB\n");            
             simple_lsb_encrypt(st_img, strlen(msg), msg);
-            write_png("encrypted_simple_lsb.png", st_img);
+            
+            char output[strlen(img_path) + 1 + 3];
+            string_cpy(output, strlen(img_path), img_path);
+            append_en_to_image_name(output, strlen(img_path), 's');
+
+            write_png(output, st_img);
         }else if(str_case_cmp(steg_algo_used, "PVD_greyscale") == true){
             printf("PVD greyscale\n");
             pvd_grayscale_encrypt(&st_img, strlen(msg), msg);
-            write_png("en_pvd_sky.png", st_img);  
+
+            char output[strlen(img_path) + 1 + 3];
+            string_cpy(output, strlen(img_path), img_path);
+            append_en_to_image_name(output, strlen(img_path), 'p');
+
+            write_png(output, st_img);  
+        }else if(str_case_cmp(steg_algo_used, "PVD_4px") == true){
+            printf("PVD 4px\n");
+            pvd_4px_encrypt(&st_img, strlen(msg), msg);
+
+            char output[strlen(img_path) + 1 + 3];
+            string_cpy(output, strlen(img_path), img_path);
+            append_en_to_image_name(output, strlen(img_path), '4');
+
+            write_png(output, st_img);  
         }
 
         free_image(&st_img);

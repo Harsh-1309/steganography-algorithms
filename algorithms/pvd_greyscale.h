@@ -15,14 +15,6 @@
 #include "../image.h"
 #include "../util.h"
 
-static uint64_t i_img(uint32_t width, uint64_t x, uint64_t y){
-    return x + y*width;
-}
-
-typedef struct uint8_pair {
-    uint8_t x;
-    uint8_t y;
-} u8_Pair;
 
 //Paritioning scheme 8, 8, 16, 32, 64, 128
 static u8_Pair find_difference_range(uint8_t d){
@@ -56,22 +48,6 @@ static u8_Pair embedding_func(u8_Pair i_pixel, int16_t d_old, int16_t d_new, boo
     else *out_bounds = false;
 
     return (u8_Pair){x, y};
-}
-
-static uint8_t bits_to_val(const char* restrict arr, uint8_t num_bits, uint8_t bit_num){
-    assert(bit_num <= 7);
-    assert(num_bits <= 7);
-    assert(arr != NULL);
-
-    uint32_t len = strlen(arr);
-    uint8_t sum = 0;
-    for(uint8_t i = 0; i < num_bits && i != num_bits; i++){
-        if((i + bit_num)/NUM_BITS_IN_CHAR >= len)
-            break;
-        sum += get_bit_from_char((i + bit_num) % NUM_BITS_IN_CHAR, arr[(i + bit_num)/NUM_BITS_IN_CHAR]) * pow(2, i);
-    }
-
-    return sum;
 }
 
 static u8_Pair calc_new_grey_vals(u8_Pair old_vals, const char * restrict msg, 

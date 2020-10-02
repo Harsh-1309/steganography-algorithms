@@ -1,7 +1,5 @@
-- Test pvd_greyscale
 - Error handling in image class
-- Name
-- Version control
+- Image names
 - Command line getopt
 - Input checking in main
 - More algorithms
