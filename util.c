@@ -40,7 +40,7 @@ uint8_t bits_to_val(const char* restrict arr, uint8_t num_bits, uint8_t * restri
             *bit_num = (*bit_num + i + 1) % NUM_BITS_IN_CHAR;           
             return sum;
         }
-        sum += get_bit_from_char(*msg_index + (i + *bit_num) % NUM_BITS_IN_CHAR, 
+        sum += get_bit_from_char((i + *bit_num) % NUM_BITS_IN_CHAR, 
                                  arr[*msg_index + (i + *bit_num)/NUM_BITS_IN_CHAR]) * pow(2, i);
     }
 
