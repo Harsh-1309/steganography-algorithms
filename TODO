@@ -1,5 +1,6 @@
 - Error handling in image class
 - Image names
+- Remove msg len parameter from algos
 - Command line getopt
 - Input checking in main
 - More algorithms

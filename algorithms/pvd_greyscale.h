@@ -76,10 +76,8 @@ static u8_Pair calc_new_grey_vals(u8_Pair old_vals, const char * restrict msg,
     }
     *skip = false;
 
-    d_new = range.x + bits_to_val(&msg[*msg_index], num_bits, *bit_num);
+    d_new = range.x + bits_to_val(msg, num_bits, bit_num, msg_index);
     //printf("Bits written: %u value written: %u ", num_bits, bits_to_val(&msg[*msg_index], num_bits, *bit_num));
-    if(*bit_num + num_bits > 7) (*msg_index)++;
-    *bit_num = (*bit_num + num_bits) % NUM_BITS_IN_CHAR;
     d_new *= d >= 0 ? 1 : -1;
     
 

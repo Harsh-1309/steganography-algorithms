@@ -27,18 +27,25 @@ uint8_t get_bit_from_char(uint8_t n, uint8_t c){
     return ((c & mask) >> n);
 }
 
-uint8_t bits_to_val(const char* restrict arr, uint8_t num_bits, uint8_t bit_num){
-    assert(bit_num <= 7);
+uint8_t bits_to_val(const char* restrict arr, uint8_t num_bits, uint8_t * restrict bit_num, uint32_t * restrict msg_index){
+    assert(*bit_num <= 7);
     assert(num_bits <= 7);
     assert(arr != NULL);
 
     uint32_t len = strlen(arr);
     uint8_t sum = 0;
     for(uint8_t i = 0; i < num_bits && i != num_bits; i++){
-        if((i + bit_num)/NUM_BITS_IN_CHAR >= len)
-            break;
-        sum += get_bit_from_char((i + bit_num) % NUM_BITS_IN_CHAR, arr[(i + bit_num)/NUM_BITS_IN_CHAR]) * pow(2, i);
+        if((*msg_index + (i + *bit_num)/NUM_BITS_IN_CHAR) >= len){
+            (*msg_index)++;
+            *bit_num = (*bit_num + i + 1) % NUM_BITS_IN_CHAR;           
+            return sum;
+        }
+        sum += get_bit_from_char(*msg_index + (i + *bit_num) % NUM_BITS_IN_CHAR, 
+                                 arr[*msg_index + (i + *bit_num)/NUM_BITS_IN_CHAR]) * pow(2, i);
     }
+
+    if(*bit_num + num_bits > 7) (*msg_index)++;
+    *bit_num = (*bit_num + num_bits) % NUM_BITS_IN_CHAR;
 
     return sum;
 }

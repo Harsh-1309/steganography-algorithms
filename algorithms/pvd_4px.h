@@ -20,6 +20,44 @@
 #define K_H 4
 #define T 15
 
+static uint8_t k_bit_lsb(uint8_t pixel, uint8_t value, uint8_t k){
+    assert(k < 8);
+    return pixel - (pixel % pow(2, k)) + value;
+}
+
+static uint8_t modified_lsb(uint8_t delta, uint8_t lsb_val, uint8_t k){
+    assert(k < 8);
+    
+    uint8_t a = pow(2, k - 1);
+    uint8_t b = pow(2, k);
+
+    assert(-b < delta && delta < b);
+
+    if(a < delta && delta < b){
+        if(lsb_val >= b){
+            return lsb_val - b;
+        }else{
+            return lsb_val;
+        }
+    }else if(-a <= delta && delta <= a){
+        return lsb_val;
+    }else if(-b <= delta && delta < -a){
+        if(lsb_val < 256 - b){
+            return lsb_val + b;
+        }else{
+            return lsb_val;
+        }
+    }
+
+    assert(0);
+}
+
+static bool is_error block(const u8_Quad * restrict vals, uint8_t avg_diff){
+    uint8_t min_minus_max = max_4(vals->x, vals->y, vals->z, vals->w) 
+                            - min_4(vals->x, vals->y, vals->z, vals->w);
+    
+    return (avg_diff <= T && min_minus_max > 2 * T + 2);
+}
 
 static void calc_new_grey_vals(u8_Quad* old_vals, const char * restrict msg, 
                                   uint32_t * restrict msg_index, uint8_t * restrict bit_num)
@@ -30,10 +68,33 @@ static void calc_new_grey_vals(u8_Quad* old_vals, const char * restrict msg,
     uint8_t k = T >= avg_diff ? K_L : K_H; 
 
     //Error block
-    uint8_t min_minus_max = max_4(old_vals->x, old_vals->y, old_vals->z, old_vals->w) - p_min;
-    if(avg_diff <= T && min_minus_max > 2 * T + 2) return;
+    if(is_error(old_vals, avg_diff)) return;
 
+    //Simple LSB 
+    uint8_t bit_num = 0;
+    uint8_t val = 0;
+    u8_Quad LSB_vals = {};
+
+    val = bits_to_val(msg, k, bit_num, msg_index);
+    LSB_vals.x = simple_lsb(old_vals->x, val, k);
     
+    val = bits_to_val(msg, k, bit_num, msg_index);
+    LSB_vals.y = simple_lsb(old_vals->y, val, k);
+    
+    val = bits_to_val(msg, k, bit_num, msg_index);
+    LSB_vals.z = simple_lsb(old_vals->z, val, k);
+    
+    val = bits_to_val(msg, k, bit_num, msg_index);
+    LSB_vals.w = simple_lsb(old_vals->w, val, k);
+    
+    //Modified LSB
+    LSB_vals.x =  modified_lsb(LSB_vals.x - old_vals[i], LSB_vals.x, k);
+    LSB_vals.y =  modified_lsb(LSB_vals.y - old_vals[i], LSB_vals.x, k);
+    LSB_vals.z =  modified_lsb(LSB_vals.z - old_vals[i], LSB_vals.x, k);
+    LSB_vals.w =  modified_lsb(LSB_vals.w - old_vals[i], LSB_vals.x, k);
+
+    //Readjusting procedure
+
 
 }
 
