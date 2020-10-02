@@ -65,3 +65,19 @@ void append_en_to_image_name(char* restrict arr, uint32_t msg_len, char c){
 uint64_t i_img(uint32_t width, uint64_t x, uint64_t y){
     return x + y*width;
 }
+
+uint8_t min(uint8_t a, uint8_t b){
+    return a > b ? b : a;
+}
+
+uint8_t min_4(uint8_t a, uint8_t b, uint8_t c, uint8_t d){
+    return min(min(a, b), min(c, d));
+}
+
+
+uint8_t max(uint8_t a, uint8_t b){
+    return a > b ? a : b;
+}
+uint8_t max_4(uint8_t a, uint8_t b, uint8_t c, uint8_t d){
+    return max(max(a, b), max(c, d));
+}

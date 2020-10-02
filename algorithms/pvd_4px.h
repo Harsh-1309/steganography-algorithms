@@ -15,8 +15,27 @@
 #include "../image.h"
 #include "../util.h"
 
+//2^(kl) <= T <= 2^(kh)
+#define K_L 3
+#define K_H 4
+#define T 15
 
 
+static void calc_new_grey_vals(u8_Quad* old_vals, const char * restrict msg, 
+                                  uint32_t * restrict msg_index, uint8_t * restrict bit_num)
+{         
+    uint8_t p_min = min_4(old_vals->x, old_vals->y, old_vals->z, old_vals->w);
+    uint8_t avg_diff = ((old_vals->x - p_min) + (old_vals->y - p_min) + (old_vals->w - p_min) + (old_vals->z - p_min))/3;
+
+    uint8_t k = T >= avg_diff ? K_L : K_H; 
+
+    //Error block
+    uint8_t min_minus_max = max_4(old_vals->x, old_vals->y, old_vals->z, old_vals->w) - p_min;
+    if(avg_diff <= T && min_minus_max > 2 * T + 2) return;
+
+    
+
+}
 
 // Return values:
 // -1 - 0 image size
@@ -58,7 +77,7 @@ int8_t pvd_4px_encrypt(Image* st_img, uint32_t msg_len, const char * restrict ms
         }
     }
 
-    bool flip = false;
+    bool skip = false;
 
 
     uint8_t grey_index = st_img->channels - 1;
