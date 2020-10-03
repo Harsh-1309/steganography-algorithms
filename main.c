@@ -36,6 +36,24 @@ int main(int argc, char** argv){
 
         Image st_img = load_image(img_path);
 
+        if(st_img.channels > 2){
+            Image grey = convert_to_greyscale(&st_img);
+            free_image(&st_img);
+            st_img.width = grey.width;
+            st_img.height = grey.height;
+            st_img.channels = grey.channels;
+            st_img.img_p = grey.img_p;
+            st_img.image_size = grey.image_size;
+            st_img.ic = grey.ic;
+
+            if(st_img.img_p == NULL){
+                fprintf(stderr, "Error in greycale conversion.\n");
+                return -3;
+            }
+        }
+        Image e = fuzzy_edge_detector(&st_img);
+        write_png("edge2.png", e);
+
         if(str_case_cmp(steg_algo_used, "simple_lsb") == true){
             printf("SIMPLE LSB\n");            
             simple_lsb_encrypt(st_img, strlen(msg), msg);
