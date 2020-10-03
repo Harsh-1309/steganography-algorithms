@@ -1,5 +1,6 @@
 #include "util.h"
 
+#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <assert.h>
@@ -34,13 +35,15 @@ uint8_t bits_to_val(const char* restrict arr, uint8_t num_bits, uint32_t len, ui
     assert(*bit_num <= 7);
     assert(num_bits <= 7);
     assert(arr != NULL);
+    if(*msg_index >= len) return 0;
 
     if((*msg_index + (num_bits + *bit_num)/NUM_BITS_IN_CHAR) >= len){
         num_bits = 8 - *bit_num;
+        printf("nb: %u bn: %u msg: %u\n", num_bits, *bit_num, *msg_index);
     }
 
     uint8_t sum = 0;
-    for(uint8_t i = 0; i < num_bits && i != num_bits; i++){
+    for(uint8_t i = 0; i < num_bits; i++){
         sum += get_bit_from_char((i + *bit_num) % NUM_BITS_IN_CHAR, 
                                  arr[*msg_index + (i + *bit_num)/NUM_BITS_IN_CHAR]) * pow(2, i);
     }

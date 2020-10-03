@@ -235,8 +235,11 @@ int8_t pvd_grayscale_encrypt(Image* st_img, uint32_t msg_len, const char * restr
 
     if(msg_index < msg_len){
         printf("Full message can't be embedded in the image, embedded first %u characters (bytes) and %u bits.\n", 
-               msg_index, bit_num - 1);
-    }
+               msg_index, bit_num);
+        if(bit_num != 0) printf("Recovery key is: %u.\n", msg_index + 1);
+        else printf("Recovery key is: %u.\n", msg_index);
+
+    }else printf("Recovery key is: %u.\n", msg_len);
 
     return 0;
 }

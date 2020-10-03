@@ -37,6 +37,9 @@ static uint8_t modified_lsb(int16_t delta, uint8_t lsb_val, uint8_t k){
     uint8_t a = power_2(k - 1);
     uint8_t b = power_2(k);
 
+    if(!(-b < delta && delta < b)){
+        printf("%d %u\n", delta, lsb_val);
+    }
     assert(-b < delta && delta < b);
 
     if(a < delta && delta < b){
@@ -265,8 +268,11 @@ int8_t pvd_4px_encrypt(Image* st_img, uint32_t msg_len, const char * restrict ms
 
     if(msg_index < msg_len){
         printf("Full message can't be embedded in the image, embedded first %u characters (bytes) and %u bits.\n", 
-               msg_index, bit_num - 1);
-    }
+               msg_index, bit_num);
+        if(bit_num != 0) printf("Recovery key is: %u.\n", msg_index + 1);
+        else printf("Recovery key is: %u.\n", msg_index);
+
+    }else printf("Recovery key is: %u.\n", msg_len);
 
     return 0;
 }
