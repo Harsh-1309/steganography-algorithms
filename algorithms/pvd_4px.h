@@ -37,9 +37,6 @@ static uint8_t modified_lsb(int16_t delta, uint8_t lsb_val, uint8_t k){
     uint8_t a = power_2(k - 1);
     uint8_t b = power_2(k);
 
-    if(!(-b < delta && delta < b)){
-        printf("%d %u\n", delta, lsb_val);
-    }
     assert(-b < delta && delta < b);
 
     if(a < delta && delta < b){
@@ -65,7 +62,11 @@ static bool is_error_block(const u8_Quad * restrict vals, float avg_diff){
     uint8_t min_minus_max = max_4(vals->x, vals->y, vals->z, vals->w) 
                             - min_4(vals->x, vals->y, vals->z, vals->w);
     
-    return (avg_diff <= T && min_minus_max > 2 * T + 2);
+    if(avg_diff <= T && min_minus_max > 2 * T + 2){
+        return true;
+    }
+
+    return false;
 }
 
 static float calc_avg_diff(const u8_Quad * restrict vals){

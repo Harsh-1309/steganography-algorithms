@@ -39,7 +39,6 @@ uint8_t bits_to_val(const char* restrict arr, uint8_t num_bits, uint32_t len, ui
 
     if((*msg_index + (num_bits + *bit_num)/NUM_BITS_IN_CHAR) >= len){
         num_bits = 8 - *bit_num;
-        printf("nb: %u bn: %u msg: %u\n", num_bits, *bit_num, *msg_index);
     }
 
     uint8_t sum = 0;
