@@ -23,14 +23,19 @@
 
 static uint8_t k_bit_lsb(uint8_t pixel, uint8_t value, uint8_t k){
     assert(k < 8);
-    return pixel - (pixel % (uint8_t)pow(2, k)) + value;
+    return pixel - (pixel % power_2(k)) + value;
+}
+
+static uint8_t recover_k_bit_lsb(uint8_t pixel, uint8_t k){
+    assert(k < 8);
+    return pixel % power_2(k);
 }
 
 static uint8_t modified_lsb(int16_t delta, uint8_t lsb_val, uint8_t k){
     assert(k < 8);
     
-    uint8_t a = pow(2, k - 1);
-    uint8_t b = pow(2, k);
+    uint8_t a = power_2(k - 1);
+    uint8_t b = power_2(k);
 
     assert(-b < delta && delta < b);
 
@@ -73,7 +78,7 @@ static uint16_t calc_squared_diff(const u8_Quad * restrict q1, const u8_Quad * r
     + (q1->w - q2->w)*(q1->w - q2->w);
 }
 
-static u8_Quad embed_pixels(u8_Quad old_vals, const char * restrict msg, 
+static u8_Quad embed_pixels(u8_Quad old_vals, const char * restrict msg,  uint32_t msg_len,
                                   uint32_t * restrict msg_index, uint8_t * restrict bit_num,
                                   bool * restrict skip)
 {         
@@ -92,16 +97,16 @@ static u8_Quad embed_pixels(u8_Quad old_vals, const char * restrict msg,
     uint8_t val = 0;
     u8_Quad LSB_vals = {};
 
-    val = bits_to_val(msg, k, bit_num, msg_index);
+    val = bits_to_val(msg, k, msg_len, bit_num, msg_index);
     LSB_vals.x = k_bit_lsb(old_vals.x, val, k);
     
-    val = bits_to_val(msg, k, bit_num, msg_index);
+    val = bits_to_val(msg, k, msg_len, bit_num, msg_index);
     LSB_vals.y = k_bit_lsb(old_vals.y, val, k);
     
-    val = bits_to_val(msg, k, bit_num, msg_index);
+    val = bits_to_val(msg, k,  msg_len, bit_num, msg_index);
     LSB_vals.z = k_bit_lsb(old_vals.z, val, k);
     
-    val = bits_to_val(msg, k, bit_num, msg_index);
+    val = bits_to_val(msg, k,  msg_len, bit_num, msg_index);
     LSB_vals.w = k_bit_lsb(old_vals.w, val, k);
     
     //Modified LSB
@@ -113,7 +118,7 @@ static u8_Quad embed_pixels(u8_Quad old_vals, const char * restrict msg,
     //Readjusting procedure
     u8_Quad temp = {};
     int8_t mul[] = {0, 1, -1};
-    uint8_t a = pow(2, k);
+    uint8_t a = power_2(k);
 
     u8_Quad min_quad;
     uint16_t min_quad_sd = -1;
@@ -137,7 +142,7 @@ static u8_Quad embed_pixels(u8_Quad old_vals, const char * restrict msg,
                     if(is_error_block(&temp, a_diff)) continue;
                     uitemp = calc_squared_diff(&temp, &old_vals);
 
-                    printf("x: %u y: %u z: %u w: %u ca: %u \n", temp.x, temp.y, temp.z, temp.w, uitemp);
+                    //printf("x: %u y: %u z: %u w: %u ca: %u \n", temp.x, temp.y, temp.z, temp.w, uitemp);
 
 
                     if(uitemp < min_quad_sd){
@@ -153,11 +158,43 @@ static u8_Quad embed_pixels(u8_Quad old_vals, const char * restrict msg,
     return min_quad;
 }
 
+
+static void recover_msg(u8_Quad old_vals, char * restrict msg, uint32_t msg_len, 
+                        uint32_t * restrict msg_index, uint8_t * restrict bit_num)
+{
+    float avg_diff = calc_avg_diff(&old_vals);
+    uint8_t k = T >= avg_diff ? K_L : K_H;
+    
+    if(is_error_block(&old_vals, avg_diff)) return;
+
+    
+    
+    uint8_t pixels[4] = {old_vals.x, old_vals.y, old_vals.z, old_vals.w};
+    uint8_t num_bits = k, bits = 0, bit = 0;
+    for(uint8_t i = 0; i < 4; i++){
+        bits = recover_k_bit_lsb(pixels[i], num_bits);
+
+        for(uint8_t j = 0; j < num_bits; j++){
+            bit = (bits >> j) & (1);
+            if(bit == 1)
+                msg[*msg_index] |= (uint8_t)1 << *(bit_num);
+            
+            (*bit_num)++;
+            if((*bit_num) % NUM_BITS_IN_CHAR == 0){
+                (*bit_num) = 0;
+                (*msg_index)++;
+                if((*msg_index) >= msg_len)
+                    break;
+            }
+        }
+
+    }
+} 
+
 // Return values:
 // -1 - 0 image size
 // -2 - 0 message
-// -3 - long message
-// -4 - Error in greyscale conversion
+// -3 - Error in greyscale conversion
 int8_t pvd_4px_encrypt(Image* st_img, uint32_t msg_len, const char * restrict msg){
     assert(st_img->img_p != NULL);
     assert(msg != NULL);
@@ -172,11 +209,6 @@ int8_t pvd_4px_encrypt(Image* st_img, uint32_t msg_len, const char * restrict ms
         return -2;
     }
 
-    /*if(msg_len * NUM_BITS_IN_CHAR > st_img->image_size/st_img->channels){
-        fprintf(stderr, "Error: Message too long to store.\n");
-        return -3;
-    }*/
-
     if(st_img->channels > 2){
         Image grey = convert_to_greyscale(st_img);
         free_image(st_img);
@@ -189,7 +221,7 @@ int8_t pvd_4px_encrypt(Image* st_img, uint32_t msg_len, const char * restrict ms
 
         if(st_img->img_p == NULL){
             fprintf(stderr, "Error in greycale conversion.\n");
-            return -4;
+            return -3;
         }
     }
 
@@ -217,7 +249,7 @@ int8_t pvd_4px_encrypt(Image* st_img, uint32_t msg_len, const char * restrict ms
             g3 = &st_img->img_p[i_img(img_buf_width, i, j + 1)];
             g4 = &st_img->img_p[i_img(img_buf_width, i + grey_index + 1, j + 1)];
 
-            new_val = embed_pixels((u8_Quad){*g1, *g2, *g3, *g4}, msg, 
+            new_val = embed_pixels((u8_Quad){*g1, *g2, *g3, *g4}, msg, msg_len, 
                                   &msg_index, &bit_num,
                                   &skip);
 
@@ -230,6 +262,54 @@ int8_t pvd_4px_encrypt(Image* st_img, uint32_t msg_len, const char * restrict ms
 
         }
     }
+
+    if(msg_index < msg_len){
+        printf("Full message can't be embedded in the image, embedded first %u characters (bytes) and %u bits.\n", 
+               msg_index, bit_num - 1);
+    }
+
+    return 0;
+}
+
+//msg should be zeroed 
+int8_t pvd_4px_decrypt(const Image * restrict st_img, uint32_t msg_len, char * restrict msg){
+    assert(st_img->img_p != NULL);
+    assert(msg != NULL);
+
+    if(msg_len == 0){
+        return 0;
+    }
+
+    if(st_img->image_size == 0){
+        fprintf(stderr, "Error: zero size image provided.\n");
+        return -1;
+    }
+
+    uint8_t grey_index = st_img->channels - 1;
+    uint8_t bit_num = 0;
+    uint8_t g1, g2, g3, g4;
+
+    uint32_t msg_index = 0;
+    uint64_t height = (st_img->height - st_img->height % 2);
+    uint64_t it_width = (st_img->width - st_img->width % 2) * st_img->channels;
+    uint64_t img_buf_width = st_img->width * st_img->channels;
+
+    for(uint64_t j = 0; j < height; j +=2){        
+        if(msg_index >= msg_len) break;
+        for(uint64_t i = 0; i < it_width; i += 2*st_img->channels){
+            if(msg_index >= msg_len) break;
+
+            g1 = st_img->img_p[i_img(img_buf_width, i, j)];
+            g2 = st_img->img_p[i_img(img_buf_width, i + grey_index + 1, j)];
+            g3 = st_img->img_p[i_img(img_buf_width, i, j + 1)];
+            g4 = st_img->img_p[i_img(img_buf_width, i + grey_index + 1, j + 1)];
+
+            recover_msg((u8_Quad){g1, g2, g3, g4}, msg, msg_len, 
+                        &msg_index, &bit_num);
+
+        }
+    }
+
     return 0;
 }
 

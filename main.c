@@ -25,12 +25,12 @@ int main(int argc, char** argv){
         }
 
         const char* steg_algo_used = argv[2];
-        //const char* msg = argv[3];
+        const char* msg = argv[3];
         const char* img_path = argv[4];
-        char msg[3];
-        msg[0] = (char)248;
+        //char msg[3];
+        /*msg[0] = (char)248;
         msg[1] = (char)11;
-        msg[2] = '\0';
+        msg[2] = '\0';*/
 
         printf("Image path: %s\n", img_path);
 
@@ -90,7 +90,13 @@ int main(int argc, char** argv){
             for(int i =0; i<=msg_len;i++) demsg[i] = '\0';
             pvd_grayscale_decrypt(&st_img, msg_len, demsg);
             printf("%s\n", demsg);
+        }else if(str_case_cmp(steg_algo_used, "PVD_4px") == true){
+            char demsg[msg_len + 1];
+            for(int i =0; i<=msg_len;i++) demsg[i] = '\0';
+            pvd_4px_decrypt(&st_img, msg_len, demsg);
+            printf("%s\n", demsg);
         }
+
         free_image(&st_img);
     }else{
         fprintf(stderr, "Invalid arguments provided: %s exiting ...\n", argv[1]);

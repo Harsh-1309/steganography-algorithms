@@ -50,7 +50,7 @@ static u8_Pair embedding_func(u8_Pair i_pixel, int16_t d_old, int16_t d_new, boo
     return (u8_Pair){x, y};
 }
 
-static u8_Pair calc_new_grey_vals(u8_Pair old_vals, const char * restrict msg, 
+static u8_Pair calc_new_grey_vals(u8_Pair old_vals, const char * restrict msg, uint32_t msg_len, 
                                   uint32_t * restrict msg_index, uint8_t * restrict bit_num, bool * restrict skip)
 {
     uint8_t num_bits;
@@ -76,7 +76,7 @@ static u8_Pair calc_new_grey_vals(u8_Pair old_vals, const char * restrict msg,
     }
     *skip = false;
 
-    d_new = range.x + bits_to_val(msg, num_bits, bit_num, msg_index);
+    d_new = range.x + bits_to_val(msg, num_bits, msg_len, bit_num, msg_index);
     //printf("Bits written: %u value written: %u ", num_bits, bits_to_val(&msg[*msg_index], num_bits, *bit_num));
     d_new *= d >= 0 ? 1 : -1;
     
@@ -120,8 +120,7 @@ static void calc_old_grey_vals(u8_Pair old_vals, uint32_t msg_len, char * restri
 // Return values:
 // -1 - 0 image size
 // -2 - 0 message
-// -3 - long message
-// -4 - Error in greyscale conversion
+// -3 - Error in greyscale conversion
 int8_t pvd_grayscale_encrypt(Image* st_img, uint32_t msg_len, const char * restrict msg){
     assert(st_img->img_p != NULL);
     assert(msg != NULL);
@@ -134,11 +133,6 @@ int8_t pvd_grayscale_encrypt(Image* st_img, uint32_t msg_len, const char * restr
     if(msg_len == 0){
         fprintf(stderr, "Error: zero size message provided.\n");
         return -2;
-    }
-
-    if(msg_len * NUM_BITS_IN_CHAR > st_img->image_size/st_img->channels){
-        fprintf(stderr, "Error: Message too long to store.\n");
-        return -3;
     }
 
     if(st_img->channels > 2){
@@ -192,7 +186,7 @@ int8_t pvd_grayscale_encrypt(Image* st_img, uint32_t msg_len, const char * restr
                     g2 = &(st_img->img_p[i_img(width, i + 1 + grey_index, j)]);
                 }
 
-                new_val = calc_new_grey_vals((u8_Pair){*g1, *g2}, msg, &msg_index, &bit_num, &skip);
+                new_val = calc_new_grey_vals((u8_Pair){*g1, *g2}, msg, msg_len, &msg_index, &bit_num, &skip);
                 if(skip == true)
                     continue;
 
@@ -221,7 +215,7 @@ int8_t pvd_grayscale_encrypt(Image* st_img, uint32_t msg_len, const char * restr
                     g2 = &(st_img->img_p[i_img(width, i - 1 - grey_index, j)]);
                 }
 
-                new_val = calc_new_grey_vals((u8_Pair){*g1, *g2}, msg, &msg_index, &bit_num, &skip);
+                new_val = calc_new_grey_vals((u8_Pair){*g1, *g2}, msg, msg_len, &msg_index, &bit_num, &skip);
                 if(skip == true){
                     if(i < 2*st_img->channels) break;
                     else continue;
@@ -240,7 +234,8 @@ int8_t pvd_grayscale_encrypt(Image* st_img, uint32_t msg_len, const char * restr
     }
 
     if(msg_index < msg_len){
-        printf("Full message can't be embedded in the image, embedded first %u characters.\n", msg_index);
+        printf("Full message can't be embedded in the image, embedded first %u characters (bytes) and %u bits.\n", 
+               msg_index, bit_num - 1);
     }
 
     return 0;
@@ -249,7 +244,7 @@ int8_t pvd_grayscale_encrypt(Image* st_img, uint32_t msg_len, const char * restr
 // Return values:
 // -1 - 0 image size
 // NULL character not counted in msg_len
-int8_t pvd_grayscale_decrypt(Image *st_img, uint32_t msg_len, char * restrict msg){
+int8_t pvd_grayscale_decrypt(const Image * restrict st_img, uint32_t msg_len, char * restrict msg){
     assert(st_img->img_p != NULL);
     assert(msg != NULL);
 
@@ -266,7 +261,7 @@ int8_t pvd_grayscale_decrypt(Image *st_img, uint32_t msg_len, char * restrict ms
 
     uint8_t grey_index = st_img->channels - 1;
     uint8_t bit_num = 0;
-    uint8_t *g1 = NULL, *g2 = NULL;
+    uint8_t g1, g2;
 
     uint32_t msg_index = 0;
     uint64_t i = 0;
@@ -283,17 +278,17 @@ int8_t pvd_grayscale_decrypt(Image *st_img, uint32_t msg_len, char * restrict ms
                 if(msg_index >= msg_len) break;
 
                 //Getting pixel values
-                g1 = &(st_img->img_p[i_img(width, i, j)]);
+                g1 = (st_img->img_p[i_img(width, i, j)]);
                 if(i == width - 1 - grey_index){
                     if(j + 1 == st_img->height) break;
 
-                    g2 = &(st_img->img_p[i_img(width, (width - 1 - grey_index), j + 1)]);
+                    g2 = (st_img->img_p[i_img(width, (width - 1 - grey_index), j + 1)]);
                     skip_first_pixel = true;
                 }else{
-                    g2 = &(st_img->img_p[i_img(width, i + 1 + grey_index, j)]);
+                    g2 = (st_img->img_p[i_img(width, i + 1 + grey_index, j)]);
                 }
 
-                calc_old_grey_vals((u8_Pair){*g1, *g2}, msg_len, msg, &msg_index, &bit_num);
+                calc_old_grey_vals((u8_Pair){g1, g2}, msg_len, msg, &msg_index, &bit_num);
             }
         }else{
             if(skip_first_pixel) i = (width - 1 - grey_index) -  (1 + grey_index);
@@ -304,17 +299,17 @@ int8_t pvd_grayscale_decrypt(Image *st_img, uint32_t msg_len, char * restrict ms
                 if(msg_index >= msg_len) break;
 
                 //Getting pixel values
-                g1 = &(st_img->img_p[i_img(width, i, j)]);
+                g1 = (st_img->img_p[i_img(width, i, j)]);
                 if(i == 0){
                     if(j + 1 == st_img->height) break;
 
-                    g2 = &(st_img->img_p[i_img(width, 0, j + 1)]);
+                    g2 = (st_img->img_p[i_img(width, 0, j + 1)]);
                     skip_first_pixel = true;
                 }else{
-                    g2 = &(st_img->img_p[i_img(width, i - 1 - grey_index, j)]);
+                    g2 = (st_img->img_p[i_img(width, i - 1 - grey_index, j)]);
                 }
 
-                calc_old_grey_vals((u8_Pair){*g1, *g2}, msg_len, msg, &msg_index, &bit_num);
+                calc_old_grey_vals((u8_Pair){g1, g2}, msg_len, msg, &msg_index, &bit_num);
 
                 if (i < 2*st_img->channels) break;
             }
