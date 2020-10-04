@@ -438,3 +438,22 @@ Image canny_edge_detector(const Image* img){
 
     return output;
 }
+
+Image hybrid_edge_detector(const Image* img){
+    if(img->channels > 2)
+        return (Image){0};
+
+    Image fuzzy_img = fuzzy_edge_detector(img);
+    Image canny_img = canny_edge_detector(img);
+
+
+
+    for(uint64_t i = 0; i < img->image_size; i += img->channels){
+        if(fuzzy_img.img_p[i] == 255){
+            canny_img.img_p[i] = 255;
+        }
+    }
+
+    free_image(&fuzzy_img);
+    return canny_img;
+}

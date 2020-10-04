@@ -51,8 +51,8 @@ int main(int argc, char** argv){
                 return -3;
             }
         }
-        Image e = canny_edge_detector(&st_img);
-        write_png("blur.png", e);
+        Image e = hybrid_edge_detector(&st_img);
+        write_png("hybrid.png", e);
 
         if(str_case_cmp(steg_algo_used, "simple_lsb") == true){
             printf("SIMPLE LSB\n");            

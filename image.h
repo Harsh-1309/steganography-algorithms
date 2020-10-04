@@ -28,6 +28,7 @@ extern void free_image(Image* img);
 extern Image convert_to_greyscale(const Image* img);
 extern Image fuzzy_edge_detector(const Image* img);
 extern Image canny_edge_detector(const Image* img);
+extern Image hybrid_edge_detector(const Image* img);
 
 
 #endif
