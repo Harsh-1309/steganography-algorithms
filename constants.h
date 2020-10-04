@@ -11,4 +11,6 @@
 #define string_cpy(d, b, s) strcpy_s((d), (b), (s))
 #endif
 
+#define M_PI 3.14159265358979323846
+
 #endif
