@@ -269,7 +269,7 @@ Image canny_edge_detector(const Image* img){
                 }
             }
 
-            blur.img_p[i_img(width, i, j)] = (uint8_t)sum;
+            blur.img_p[i_img(width, i, j)] = u8_fclamp(sum);
             sum = 0.0f;
         }
     }
@@ -292,7 +292,7 @@ Image canny_edge_detector(const Image* img){
     const uint8_t sobel_w = 1;
     float g_max = 0.0f;
     for(uint64_t j = 0; j < blur.height; j++){
-        for(uint64_t i = 0; i < width; i += img->channels){
+        for(uint64_t i = 0; i < width; i += blur.channels){
 
             for(int8_t k = -sobel_w; k <= sobel_w; k++){
                 for(int8_t l = -sobel_w; l <= sobel_w; l++){
@@ -313,11 +313,128 @@ Image canny_edge_detector(const Image* img){
     }
 
     for(uint64_t i = 0; i < blur.image_size; i += blur.channels){
-        blur.img_p[i] = (uint8_t)grad_mag[i/blur.channels]/g_max * 255;
+        blur.img_p[i] = u8_fclamp(grad_mag[i/blur.channels]/g_max * 255.0);
     }
 
-    //Non-maximum suppression
+    free(grad_mag);
     
+    //Non-maximum suppression
+    uint8_t p = 0;
+    uint8_t n = 0;
+    uint8_t max_pixel = 0;
+    for(uint64_t j = 1; j < blur.height - 1; j++){
+        for(uint64_t i = 1; i < width - 1; i += blur.channels){
 
-    return blur;
+            switch(angle[i_img(blur.width, i, j)]){
+                case 0:
+                    {
+                        p = blur.img_p[i_img(width, i - 1*(gi + 1), j)];
+                        n = blur.img_p[i_img(width, i + 1*(gi + 1), j)];
+                    }
+                    break;
+                case 1:
+                    {
+                        p = blur.img_p[i_img(width, i + 1*(gi + 1), j - 1)];
+                        n = blur.img_p[i_img(width, i - 1*(gi + 1), j + 1)];
+                    }
+                    break;
+                case 2:
+                    {
+                        p = blur.img_p[i_img(width, i, j - 1)];
+                        n = blur.img_p[i_img(width, i, j + 1)];
+                    }   
+                    break;
+                case 3:
+                    {
+                        p = blur.img_p[i_img(width, i - 1*(gi + 1), j - 1)];
+                        n = blur.img_p[i_img(width, i + 1*(gi + 1), j + 1)];
+                    } 
+                    break;
+                default:
+                    assert(0);
+            }
+
+            if(blur.img_p[i_img(width, i, j)] < p || blur.img_p[i_img(width, i, j)] < n){
+                blur.img_p[i_img(width, i, j)] = 0;
+                continue;
+            }
+
+            if(blur.img_p[i_img(width, i, j)] > max_pixel) max_pixel = blur.img_p[i_img(width, i, j)];
+        }
+    }
+
+    //Setting edge pixels to 0
+    for(uint64_t i = 0; i < width; i += blur.channels){
+        blur.img_p[i_img(width, i, 0)] = blur.img_p[i_img(width, i, blur.height - 1)] = 0;
+    }
+
+    for(uint64_t i = 0; i < blur.height; i += 1){
+        blur.img_p[i_img(width, 0, i)] = blur.img_p[i_img(width, width - 1 - gi, i)] = 0;
+    }
+
+
+    free(angle);
+
+    //Double thresholding
+    const float high_threshold = 0.09f * max_pixel;
+    const float low_threshold = 0.05f * high_threshold;
+
+    const uint8_t strong_pixel = 255;
+    const uint8_t weak_pixel = 25;
+    uint8_t cur_pixel = 0.0f;
+
+    for(uint64_t j = 0; j < blur.height; j++){
+        for(uint64_t i = 0; i < width; i += blur.channels){
+            cur_pixel = blur.img_p[i_img(width, i, j)];
+
+            if(cur_pixel < low_threshold)
+                blur.img_p[i_img(width, i, j)] = 0;
+            else if(cur_pixel >= low_threshold && cur_pixel < high_threshold){
+                blur.img_p[i_img(width, i, j)] = weak_pixel;
+            }else if(cur_pixel >= high_threshold){
+                blur.img_p[i_img(width, i, j)] = strong_pixel;
+            }else{
+                assert(0);
+            }
+
+        }
+    }    
+
+
+    Image output = {img->width, img->height, img->channels, NULL, img->image_size, MALLOC};
+    output.img_p = malloc(blur.image_size);
+
+    //Edge tracking with hytersis
+    bool has_strong_pixel = false;
+    for(uint64_t j = 0; j < blur.height; j++){
+        for(uint64_t i = 0; i < width; i += blur.channels){
+            if(blur.img_p[i_img(width, i, j)] == strong_pixel || blur.img_p[i_img(width, i, j)] == 0){
+                output.img_p[i_img(width, i, j)] = blur.img_p[i_img(width, i, j)];
+                continue;
+            }
+                
+
+            for(int8_t k = -sobel_w; k <= sobel_w; k++){
+                for(int8_t l = -sobel_w; l <= sobel_w; l++){
+                    if((i + l*(gi + 1) != -1) && (j + k != -1) && (i + l*(gi + 1) < width) && (j + k < blur.height)){
+                        if(blur.img_p[i_img(width, i + l*(gi + 1), j + k)] == strong_pixel){
+                            has_strong_pixel = true;
+                            break;
+                        }
+                    }
+                }
+
+                if(has_strong_pixel) break;
+            }
+
+            if(has_strong_pixel) output.img_p[i_img(width, i, j)] = strong_pixel;
+            else output.img_p[i_img(width, i, j)] = 0;
+
+            has_strong_pixel = false;
+        }
+    }
+
+    free_image(&blur);
+
+    return output;
 }

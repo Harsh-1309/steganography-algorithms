@@ -96,3 +96,7 @@ uint8_t power_2(uint8_t k){
     assert(k < 8);
     return 2 << k;
 }
+
+uint8_t u8_fclamp(float f){
+    return fmin(fmax(f, 0.0f), 255.0f);
+}

@@ -28,5 +28,6 @@ extern uint8_t min_4(uint8_t a, uint8_t b, uint8_t c, uint8_t d);
 extern uint8_t max(uint8_t a, uint8_t b);
 extern uint8_t max_4(uint8_t a, uint8_t b, uint8_t c, uint8_t d);
 extern uint8_t power_2(uint8_t k);
+extern uint8_t u8_fclamp(float f);
 
 #endif
