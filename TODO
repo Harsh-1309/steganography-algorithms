@@ -1,8 +1,0 @@
-- Error handling in image class
-- Image names (ok for now)
-- Command line getopt
-- Input checking in main
-- More algorithms
-- Edit pvd greyscale to read indiviual bit values.
-- Rewrite bits_to_val function (ok for now)
-- Message length simple lsb
