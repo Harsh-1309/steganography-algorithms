@@ -14,7 +14,7 @@
 #include "stb_image/stb_image_write.h"
 
 
-Image load_image(const char* img_path){
+Image load_image(const char * img_path){
     Image i = {};
     i.img_p = stbi_load(img_path, &i.width, &i.height, &i.channels, 0);
     i.image_size = i.width * i.height * i.channels;
@@ -159,51 +159,6 @@ Image fuzzy_edge_detector(const Image* img){
         if(edge.channels == 2)
              edge.img_p[i + 1] = img->img_p[i + 1]; 
     }
-
-    /*const float lower_threshold = 0.70f;
-    const float higher_threshold = 0.95f;
-
-    bool has_strong = false;
-    for(uint64_t j = 0; j < img->height; j++){
-        for(uint64_t i = 0; i < width; i += img->channels){
-            if(edge.channels == 2)
-                edge.img_p[i_img(width, i + 1, j)] = img->img_p[i_img(width, i + 1, j)];
-
-            f = fedge_img[i_img(img->width, i, j)];
-            if(f > higher_threshold){
-                edge.img_p[i_img(width, i, j)] = 255;
-                continue;
-            }
-
-            if(f < lower_threshold){
-                edge.img_p[i_img(width, i, j)] = 0;
-                continue;
-            }
-
-            assert(f >= lower_threshold && f <= higher_threshold);
-
-            for(int8_t k = -w_half; k <= w_half; k++){
-                for(int8_t l = -w_half; l <= w_half; l++){
-                    if((i + l != -1) && (j + k != -1) && (i + l < width) && (j + k < img->height)){
-                        has_strong = fedge_img[i_img(img->width, i + l, j + k)] > higher_threshold ? true : false;
-                    }
-
-                    if(has_strong == true) break;
-                }
-                if(has_strong == true) break;
-            }
-
-            if(has_strong){
-                edge.img_p[i_img(width, i, j)] = 255;
-            }else{
-                edge.img_p[i_img(width, i, j)] = 0;
-            }
-
-            has_strong = false;
-        }
-    }*/
-
-
 
     free(fedge_img);
     return edge;

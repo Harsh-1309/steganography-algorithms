@@ -101,20 +101,9 @@ static void calc_old_grey_vals(u8_Pair old_vals, uint32_t msg_len, char * restri
  
     bits = d_new >= 0 ? d_new - range.x : -d_new - range.x;
     num_bits = log2(range.y - range.x + 1);
-    uint8_t bit = 0;
-    for(uint8_t i = 0; i < num_bits; i++){
-        bit = (bits >> i) & (1);
-        if(bit == 1)
-            msg[*msg_index] |= (uint8_t)1 << *(bit_num);
-        
-        (*bit_num)++;
-        if((*bit_num) % NUM_BITS_IN_CHAR == 0){
-            (*bit_num) = 0;
-            (*msg_index)++;
-            if((*msg_index) >= msg_len)
-                break;
-        }
-    }
+
+    embed_bits_to_msg(msg, msg_index, bit_num, bits, num_bits, msg_len);
+
 }
 
 // Return values:
@@ -246,7 +235,9 @@ int8_t pvd_grayscale_encrypt(Image* st_img, uint32_t msg_len, const char * restr
 
 // Return values:
 // -1 - 0 image size
+// -2 - image not greyscale
 // NULL character not counted in msg_len
+//msg should be zeroed 
 int8_t pvd_grayscale_decrypt(const Image * restrict st_img, uint32_t msg_len, char * restrict msg){
     assert(st_img->img_p != NULL);
     assert(msg != NULL);
@@ -259,6 +250,9 @@ int8_t pvd_grayscale_decrypt(const Image * restrict st_img, uint32_t msg_len, ch
         fprintf(stderr, "Error: zero size image provided.\n");
         return -1;
     }
+
+    if(st_img->channels > 2) return -2;
+
     bool flip = false;
     bool skip_first_pixel = false;
 

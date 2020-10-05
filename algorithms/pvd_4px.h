@@ -21,21 +21,13 @@
 #define K_H 4
 #define T 15
 
-static uint8_t k_bit_lsb(uint8_t pixel, uint8_t value, uint8_t k){
-    assert(k < 8);
-    return pixel - (pixel % power_2(k)) + value;
-}
 
-static uint8_t recover_k_bit_lsb(uint8_t pixel, uint8_t k){
-    assert(k < 8);
-    return pixel % power_2(k);
-}
 
 static uint8_t modified_lsb(int16_t delta, uint8_t lsb_val, uint8_t k){
     assert(k < 8);
     
-    uint8_t a = power_2(k - 1);
-    uint8_t b = power_2(k);
+    const uint8_t a = power_2(k - 1);
+    const uint8_t b = power_2(k);
 
     assert(-b < delta && delta < b);
 
@@ -174,24 +166,10 @@ static void recover_msg(u8_Quad old_vals, char * restrict msg, uint32_t msg_len,
     
     
     uint8_t pixels[4] = {old_vals.x, old_vals.y, old_vals.z, old_vals.w};
-    uint8_t num_bits = k, bits = 0, bit = 0;
+    uint8_t num_bits = k, bits = 0;
     for(uint8_t i = 0; i < 4; i++){
         bits = recover_k_bit_lsb(pixels[i], num_bits);
-
-        for(uint8_t j = 0; j < num_bits; j++){
-            bit = (bits >> j) & (1);
-            if(bit == 1)
-                msg[*msg_index] |= (uint8_t)1 << *(bit_num);
-            
-            (*bit_num)++;
-            if((*bit_num) % NUM_BITS_IN_CHAR == 0){
-                (*bit_num) = 0;
-                (*msg_index)++;
-                if((*msg_index) >= msg_len)
-                    break;
-            }
-        }
-
+        embed_bits_to_msg(msg, msg_index, bit_num, bits, num_bits, msg_len);
     }
 } 
 
@@ -232,16 +210,16 @@ int8_t pvd_4px_encrypt(Image* st_img, uint32_t msg_len, const char * restrict ms
     bool skip = false;
 
 
-    uint8_t grey_index = st_img->channels - 1;
+    const uint8_t grey_index = st_img->channels - 1;
     uint8_t bit_num = 0;
     uint8_t *g1 = NULL, *g2 = NULL, *g3 = NULL, *g4 = NULL;
 
     u8_Quad new_val;
 
     uint32_t msg_index = 0;
-    uint64_t height = (st_img->height - st_img->height % 2);
-    uint64_t it_width = (st_img->width - st_img->width % 2) * st_img->channels;
-    uint64_t img_buf_width = st_img->width * st_img->channels;
+    const uint64_t height = (st_img->height - st_img->height % 2);
+    const uint64_t it_width = (st_img->width - st_img->width % 2) * st_img->channels;
+    const uint64_t img_buf_width = st_img->width * st_img->channels;
 
     for(uint64_t j = 0; j < height; j +=2){        
         if(msg_index >= msg_len) break;
@@ -278,6 +256,10 @@ int8_t pvd_4px_encrypt(Image* st_img, uint32_t msg_len, const char * restrict ms
     return 0;
 }
 
+// Return values:
+// -1 - 0 image size
+// -2 - image not greyscale
+// NULL character not counted in msg_len
 //msg should be zeroed 
 int8_t pvd_4px_decrypt(const Image * restrict st_img, uint32_t msg_len, char * restrict msg){
     assert(st_img->img_p != NULL);
@@ -291,15 +273,17 @@ int8_t pvd_4px_decrypt(const Image * restrict st_img, uint32_t msg_len, char * r
         fprintf(stderr, "Error: zero size image provided.\n");
         return -1;
     }
+    
+    if(st_img->channels > 2) return -2;
 
-    uint8_t grey_index = st_img->channels - 1;
+    const uint8_t grey_index = st_img->channels - 1;
     uint8_t bit_num = 0;
     uint8_t g1, g2, g3, g4;
 
     uint32_t msg_index = 0;
-    uint64_t height = (st_img->height - st_img->height % 2);
-    uint64_t it_width = (st_img->width - st_img->width % 2) * st_img->channels;
-    uint64_t img_buf_width = st_img->width * st_img->channels;
+    const uint64_t height = (st_img->height - st_img->height % 2);
+    const uint64_t it_width = (st_img->width - st_img->width % 2) * st_img->channels;
+    const uint64_t img_buf_width = st_img->width * st_img->channels;
 
     for(uint64_t j = 0; j < height; j +=2){        
         if(msg_index >= msg_len) break;

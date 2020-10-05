@@ -100,3 +100,31 @@ uint8_t power_2(uint8_t k){
 uint8_t u8_fclamp(float f){
     return fmin(fmax(f, 0.0f), 255.0f);
 }
+
+uint8_t k_bit_lsb(uint8_t pixel, uint8_t value, uint8_t k){
+    assert(k < 8);
+    return pixel - (pixel % power_2(k)) + value;
+}
+
+uint8_t recover_k_bit_lsb(uint8_t pixel, uint8_t k){
+    assert(k < 8);
+    return pixel % power_2(k);
+}
+
+void embed_bits_to_msg(char * restrict msg, uint32_t * restrict msg_index, uint8_t * restrict bit_num, 
+                             uint8_t bits, uint8_t num_bits, uint32_t msg_len){
+    uint8_t bit = 0;
+    for(uint8_t j = 0; j < num_bits; j++){
+        bit = (bits >> j) & (1);
+        if(bit == 1)
+            msg[*msg_index] |= (uint8_t)1 << *(bit_num);
+        
+        (*bit_num)++;
+        if((*bit_num) % NUM_BITS_IN_CHAR == 0){
+            (*bit_num) = 0;
+            (*msg_index)++;
+            if((*msg_index) >= msg_len)
+                return;
+        }
+    }
+}

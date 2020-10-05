@@ -6,8 +6,6 @@
 
 #include "util.h"
 
-
-
 enum image_creator{
     MALLOC, 
     LIBRARY

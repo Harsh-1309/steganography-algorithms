@@ -11,6 +11,7 @@
 #include "algorithms/simple_lsb.h"
 #include "algorithms/pvd_greyscale.h"
 #include "algorithms/pvd_4px.h"
+#include "algorithms/edge_detect_lsb.h"
 
 int main(int argc, char** argv){
     if (argc < 2){ 
@@ -35,24 +36,6 @@ int main(int argc, char** argv){
         printf("Image path: %s\n", img_path);
 
         Image st_img = load_image(img_path);
-
-        if(st_img.channels > 2){
-            Image grey = convert_to_greyscale(&st_img);
-            free_image(&st_img);
-            st_img.width = grey.width;
-            st_img.height = grey.height;
-            st_img.channels = grey.channels;
-            st_img.img_p = grey.img_p;
-            st_img.image_size = grey.image_size;
-            st_img.ic = grey.ic;
-
-            if(st_img.img_p == NULL){
-                fprintf(stderr, "Error in greycale conversion.\n");
-                return -3;
-            }
-        }
-        Image e = hybrid_edge_detector(&st_img);
-        write_png("hybrid.png", e);
 
         if(str_case_cmp(steg_algo_used, "simple_lsb") == true){
             printf("SIMPLE LSB\n");            
@@ -79,6 +62,15 @@ int main(int argc, char** argv){
             char output[strlen(img_path) + 1 + 3];
             string_cpy(output, strlen(img_path), img_path);
             append_en_to_image_name(output, strlen(img_path), '4');
+
+            write_png(output, st_img);  
+        }else if(str_case_cmp(steg_algo_used, "Edge_LSB") == true){
+            printf("Edge_LSB\n");
+            edge_detect_encrypt(&st_img, strlen(msg), msg);
+
+            char output[strlen(img_path) + 1 + 3];
+            string_cpy(output, strlen(img_path), img_path);
+            append_en_to_image_name(output, strlen(img_path), 'e');
 
             write_png(output, st_img);  
         }
@@ -112,6 +104,11 @@ int main(int argc, char** argv){
             char demsg[msg_len + 1];
             for(int i =0; i<=msg_len;i++) demsg[i] = '\0';
             pvd_4px_decrypt(&st_img, msg_len, demsg);
+            printf("%s\n", demsg);
+        }else if(str_case_cmp(steg_algo_used, "Edge_LSB") == true){
+            char demsg[msg_len + 1];
+            for(int i =0; i<=msg_len;i++) demsg[i] = '\0';
+            edge_detect_decrypt(&st_img, msg_len, demsg);
             printf("%s\n", demsg);
         }
 
