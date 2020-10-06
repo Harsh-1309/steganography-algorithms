@@ -28,5 +28,4 @@ extern Image fuzzy_edge_detector(const Image* img);
 extern Image canny_edge_detector(const Image* img);
 extern Image hybrid_edge_detector(const Image* img);
 
-
 #endif

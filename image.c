@@ -412,3 +412,46 @@ Image hybrid_edge_detector(const Image* img){
     free_image(&fuzzy_img);
     return canny_img;
 }
+
+/*
+static float highf_function(float f){
+    float z_square = f*f;
+    float z_cube = f*f*f;
+
+    return (1 - 9/z_square + 16/z_cube - 9/(z_square * z_square) + 1/(z_cube * z_cube))/power_2(4);
+}
+
+static float lowf_function(float f){
+    float z_square = f*f;
+    float z_cube = f*f*f;
+    float z_five = f*f*f*f*f;
+    float z_seven = f*f*f*f*f*f*f;
+
+    return (- 1 + 14/z_square - 16/z_cube - 31/(z_square * z_square) + 80/z_five + 164/(z_cube * z_cube) 
+            + 80/z_seven - 31/(z_square * z_square * z_square * z_square) - 16/(z_cube * z_cube * z_cube) 
+            + 14/(z_five * z_five) - 1/(z_cube * z_cube * z_cube * z_cube))/power_2(8);
+}
+
+Image LL_filter(const Image* img){
+    if(img->channels > 2) break;
+
+    Image output = {img->width, img->height, img->channels, NULL, img->image_size, MALLOC};
+    output.img_p = malloc(blur.image_size);
+
+    for(uint64_t i = 0; i < img->image_size; i += img->channels){
+
+    }
+
+}
+
+Image highpass_filter(const Image* img){
+    if(img->channels > 2) break;
+
+    Image output = {img->width, img->height, img->channels, NULL, img->image_size, MALLOC};
+    output.img_p = malloc(blur.image_size);
+
+    for(uint64_t i = 0; i < img->image_size; i += img->channels){
+        
+    }
+
+}*/

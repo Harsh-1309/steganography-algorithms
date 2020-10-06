@@ -136,7 +136,7 @@ int8_t pvd_grayscale_encrypt(Image* st_img, uint32_t msg_len, const char * restr
 
         if(st_img->img_p == NULL){
             fprintf(stderr, "Error in greycale conversion.\n");
-            return -4;
+            return -3;
         }
     }
 
