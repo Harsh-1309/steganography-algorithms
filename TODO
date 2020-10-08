@@ -14,3 +14,4 @@
 - Parameters in edge detect lsb
 - Seperate canny and fuzzy edge detection functions 
 - Apply blur before fuzzy 
+- Precision problem in reversible DCT

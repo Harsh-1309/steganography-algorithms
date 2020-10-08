@@ -304,4 +304,8 @@ int8_t pvd_4px_decrypt(const Image * restrict st_img, uint32_t msg_len, char * r
     return 0;
 }
 
+#undef K_L
+#undef K_H
+#undef T
+
 #endif 

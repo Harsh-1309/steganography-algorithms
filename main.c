@@ -12,6 +12,7 @@
 #include "algorithms/pvd_greyscale.h"
 #include "algorithms/pvd_4px.h"
 #include "algorithms/edge_detect_lsb.h"
+#include "algorithms/reversible_DCT.h"
 
 int main(int argc, char** argv){
     if (argc < 2){ 
@@ -73,6 +74,15 @@ int main(int argc, char** argv){
             append_en_to_image_name(output, strlen(img_path), 'e');
 
             write_png(output, st_img);  
+        }else if(str_case_cmp(steg_algo_used, "Reversible_DCT") == true){
+            printf("Reversible_DCT\n");
+            reversible_DCT_encrypt(&st_img, strlen(msg), msg);
+
+            char output[strlen(img_path) + 1 + 3];
+            string_cpy(output, strlen(img_path), img_path);
+            append_en_to_image_name(output, strlen(img_path), 'r');
+
+            write_png(output, st_img);  
         }
 
         free_image(&st_img);
@@ -110,7 +120,13 @@ int main(int argc, char** argv){
             for(int i =0; i<=msg_len;i++) demsg[i] = '\0';
             edge_detect_decrypt(&st_img, msg_len, demsg);
             printf("%s\n", demsg);
+        }else if(str_case_cmp(steg_algo_used, "Reversible_DCT") == true){
+            char demsg[msg_len + 1];
+            for(int i =0; i<=msg_len;i++) demsg[i] = '\0';
+            reversible_DCT_decrypt(&st_img, msg_len, demsg);
+            printf("%s\n", demsg);
         }
+
 
         free_image(&st_img);
     }else{
