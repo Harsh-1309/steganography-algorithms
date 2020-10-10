@@ -22,7 +22,7 @@
 #define Q 4
 
 
-const float s0[mat_height * mat_width] = {
+const long double s0[mat_height * mat_width] = {
     +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
@@ -33,7 +33,7 @@ const float s0[mat_height * mat_width] = {
     -1.448, -1.620, +2.041, -0.184, +1.351, +1.518, +0.914, +1.000 
 };
 
-const float i_s0[mat_height * mat_width] = {
+const long double i_s0[mat_height * mat_width] = {
     +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
@@ -44,7 +44,7 @@ const float i_s0[mat_height * mat_width] = {
     +1.448, +1.620, -2.041, +0.184, -1.351, -1.518, -0.914, +1.000 
 };
 
-const float s1[mat_height * mat_width] = {
+const long double s1[mat_height * mat_width] = {
     +1.000, +1.204, -1.697, +0.216, -1.291, -0.910, -1.202, +0.750,
     +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
@@ -55,7 +55,7 @@ const float s1[mat_height * mat_width] = {
     +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +1.000   
 };
 
-const float i_s1[mat_height * mat_width] = {
+const long double i_s1[mat_height * mat_width] = {
     +1.000, -1.204, +1.697, -0.216, +1.291, +0.910, +1.202, -0.750,
     +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
@@ -66,7 +66,7 @@ const float i_s1[mat_height * mat_width] = {
     +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +1.000   
 };
 
-const float s2[mat_height * mat_width] = {
+const long double s2[mat_height * mat_width] = {
     +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000,
     -0.832, +1.000, -0.949, +0.476, -1.004, -0.753, -1.001, +0.624, 
     +0.000, +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
@@ -77,7 +77,7 @@ const float s2[mat_height * mat_width] = {
     +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +1.000   
 };
 
-const float i_s2[mat_height * mat_width] = {
+const long double i_s2[mat_height * mat_width] = {
     +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000,
     +0.832, +1.000, +0.949, -0.476, +1.004, +0.753, +1.001, -0.624, 
     +0.000, +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
@@ -88,7 +88,7 @@ const float i_s2[mat_height * mat_width] = {
     +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +1.000   
 };
 
-const float s3[mat_height * mat_width] = {
+const long double s3[mat_height * mat_width] = {
     +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.575, +0.692, +1.000, -0.757, +0.248, +0.377, +0.675, -0.432, 
@@ -99,7 +99,7 @@ const float s3[mat_height * mat_width] = {
     +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +1.000   
 };
 
-const float i_s3[mat_height * mat_width] = {
+const long double i_s3[mat_height * mat_width] = {
     +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     -0.575, -0.692, +1.000, +0.757, -0.248, -0.377, -0.675, +0.432, 
@@ -110,7 +110,7 @@ const float i_s3[mat_height * mat_width] = {
     +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +1.000   
 };
 
-const float s4[mat_height * mat_width] = {
+const long double s4[mat_height * mat_width] = {
     +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
@@ -121,7 +121,7 @@ const float s4[mat_height * mat_width] = {
     +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +1.000   
 };
 
-const float i_s4[mat_height * mat_width] = {
+const long double i_s4[mat_height * mat_width] = {
     +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
@@ -132,7 +132,7 @@ const float i_s4[mat_height * mat_width] = {
     +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +1.000   
 };
 
-const float s5[mat_height * mat_width] = {
+const long double s5[mat_height * mat_width] = {
     +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
@@ -143,7 +143,7 @@ const float s5[mat_height * mat_width] = {
     +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +1.000   
 };
 
-const float i_s5[mat_height * mat_width] = {
+const long double i_s5[mat_height * mat_width] = {
     +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
@@ -154,7 +154,7 @@ const float i_s5[mat_height * mat_width] = {
     +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +1.000   
 };
 
-const float s6[mat_height * mat_width] = {
+const long double s6[mat_height * mat_width] = {
     +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
@@ -165,7 +165,7 @@ const float s6[mat_height * mat_width] = {
     +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +1.000   
 };
 
-const float i_s6[mat_height * mat_width] = {
+const long double i_s6[mat_height * mat_width] = {
     +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
@@ -176,7 +176,7 @@ const float i_s6[mat_height * mat_width] = {
     +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +1.000   
 };
 
-const float s7[mat_height * mat_width] = {
+const long double s7[mat_height * mat_width] = {
     +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
@@ -187,7 +187,7 @@ const float s7[mat_height * mat_width] = {
     +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +1.000   
 };
 
-const float i_s7[mat_height * mat_width] = {
+const long double i_s7[mat_height * mat_width] = {
     +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
@@ -198,7 +198,7 @@ const float i_s7[mat_height * mat_width] = {
     +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +1.000   
 };
 
-const float s8[mat_height * mat_width] = {
+const long double s8[mat_height * mat_width] = {
     +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
@@ -209,7 +209,7 @@ const float s8[mat_height * mat_width] = {
     -0.044, -2.200, +1.177, +0.575, +2.099, -1.263, -1.152, -1.000   
 };
 
-const float i_s8[mat_height * mat_width] = {
+const long double i_s8[mat_height * mat_width] = {
     +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
     +0.000, +0.000, +1.000, +0.000, +0.000, +0.000, +0.000, +0.000, 
@@ -220,7 +220,7 @@ const float i_s8[mat_height * mat_width] = {
     -0.044, -2.200, +1.177, +0.575, +2.099, -1.263, -1.152, -1.000   
 };
 
-const float p[mat_height * mat_width] = {
+const long double p[mat_height * mat_width] = {
     0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 
     0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -231,7 +231,7 @@ const float p[mat_height * mat_width] = {
     1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 
 };
 
-const float i_p[mat_height * mat_width] = {
+const long double i_p[mat_height * mat_width] = {
     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 
     0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -243,7 +243,7 @@ const float i_p[mat_height * mat_width] = {
 };
 
 
-static void round_mat(const float f[mat_height * mat_width], float o[mat_height * mat_width]){
+static void round_mat(const long double f[mat_height * mat_width], long double o[mat_height * mat_width]){
     assert(f != NULL);
     assert(o != NULL);
 
@@ -252,15 +252,15 @@ static void round_mat(const float f[mat_height * mat_width], float o[mat_height 
     }
 }
 
-static void mat_mult(const float a[mat_height * mat_width], const float b[mat_height * mat_width], 
-                     float o[mat_width * mat_height]){
+static void mat_mult(const long double a[mat_height * mat_width], const long double b[mat_height * mat_width], 
+                     long double o[mat_width * mat_height]){
 
     assert(a != NULL);
     assert(b != NULL);
     assert(o != NULL);
     assert(mat_height == mat_width);
     
-    float sum = 0.0f;
+    long double sum = 0.0f;
     for(uint8_t j = 0; j < mat_height; j++){
         for(uint8_t i = 0; i < mat_width; i++){
 
@@ -276,7 +276,7 @@ static void mat_mult(const float a[mat_height * mat_width], const float b[mat_he
 
 }
 
-static void transpose(const float a[mat_height * mat_width], float o[mat_height * mat_width]){
+static void transpose(const long double a[mat_height * mat_width], long double o[mat_height * mat_width]){
     for(uint8_t j = 0; j < mat_height; j++){
         for(uint8_t i = 0; i < mat_width; i++){
             o[i_img(mat_width, j, i)] = a[i_img(mat_width, i, j)];
@@ -284,25 +284,25 @@ static void transpose(const float a[mat_height * mat_width], float o[mat_height 
     }
 }
 
-static void copy_mat(const float src[mat_height * mat_width], float dest[mat_height * mat_width]){
+static void copy_mat(const long double src[mat_height * mat_width], long double dest[mat_height * mat_width]){
     for(uint8_t i = 0; i < mat_height * mat_width; i++){
         dest[i] = src[i];
     }
 }
-
-static void print_mat(const float a[mat_width * mat_height]){
+/*
+static void print_mat(const long double a[mat_width * mat_height]){
     for(uint8_t j = 0; j < mat_height; j++){
         for(uint8_t i = 0; i < mat_width; i++){
             printf("%.1f ", a[i_img(mat_width, i, j)]);
         }
         printf("\n");
     }
-}
+}*/
 
-static void transform_subimage(const float a[mat_height * mat_width], float o[mat_height * mat_width]){    
-    float temp[mat_height * mat_width];
-    float temp2[mat_height * mat_width];
-    const float * const transforms[8] = {s1, s2, s3, s4, s5, s6, s7, s8};
+static void transform_subimage(const long double a[mat_height * mat_width], long double o[mat_height * mat_width]){    
+    long double temp[mat_height * mat_width];
+    long double temp2[mat_height * mat_width];
+    const long double * const transforms[8] = {s1, s2, s3, s4, s5, s6, s7, s8};
     
     copy_mat(a, temp2);
     //print_mat(temp2);
@@ -329,10 +329,10 @@ static void transform_subimage(const float a[mat_height * mat_width], float o[ma
     transpose(temp2, o);
 }
 
-static void invsere_transform_subimage(const float a[mat_height * mat_width], float o[mat_height * mat_width]){
-    float temp[mat_height * mat_width];
-    float temp2[mat_height * mat_width];
-    const float * const inverse_transforms[9] = {i_s0, i_s1, i_s2, i_s3, i_s4, i_s5, i_s6, i_s7, i_s8};
+static void invsere_transform_subimage(const long double a[mat_height * mat_width], long double o[mat_height * mat_width]){
+    long double temp[mat_height * mat_width];
+    long double temp2[mat_height * mat_width];
+    const long double * const inverse_transforms[9] = {i_s0, i_s1, i_s2, i_s3, i_s4, i_s5, i_s6, i_s7, i_s8};
     
     copy_mat(a, temp2);
     for(uint8_t i = 0; i < 2; i++){
@@ -362,7 +362,7 @@ static uint8_t get_next_bit(const char* restrict msg, uint32_t msg_len, uint32_t
     return bit;
 }
 
-static void embed_reversible_pixels(float dct[mat_height * mat_width], const char * restrict msg,
+static void embed_reversible_pixels(long double dct[mat_height * mat_width], const char * restrict msg,
                                     uint32_t msg_len, uint32_t * restrict msg_index, 
                                     uint8_t * restrict bit_num)
 { 
@@ -398,7 +398,7 @@ static void embed_reversible_pixels(float dct[mat_height * mat_width], const cha
     }
 }
 
-static void recover_reversible_pixels(const float dct[mat_height * mat_width], 
+static void recover_reversible_pixels(const long double dct[mat_height * mat_width], 
                                       char * restrict msg, uint32_t msg_len, uint32_t * restrict msg_index, 
                                       uint8_t * restrict bit_num)
 {
@@ -470,8 +470,8 @@ int8_t reversible_DCT_encrypt(Image* st_img, uint32_t msg_len, const char * rest
     uint64_t height = st_img->height - (st_img->height % mat_height);
     uint64_t width = (st_img->width - (st_img->width % mat_width)) * channels;
 
-    float input[mat_width * mat_height];
-    float output[mat_height * mat_width];
+    long double input[mat_width * mat_height];
+    long double output[mat_height * mat_width];
 
     uint32_t msg_index = 0;
     uint8_t bit_num = 0;
@@ -500,31 +500,6 @@ int8_t reversible_DCT_encrypt(Image* st_img, uint32_t msg_len, const char * rest
 
         }
     }
-
-/*
-    float a[mat_height * mat_width] = {
-        148, 144, 145, 143, 146, 144, 139, 139,
-        150, 143, 148, 147, 146, 142, 135, 136,
-        145, 143, 141, 147, 146, 143, 137, 130,
-        144, 145, 142, 148, 143, 140, 143, 139, 
-        141, 146, 145, 146, 136, 140, 139, 133,
-        143, 141, 138, 141, 139, 138, 135, 138,
-        141, 139, 140, 142, 137, 139, 139, 141, 
-        138, 139, 142, 136, 134, 137, 136, 137
-    };
-
-    float b[mat_height * mat_width];
-    float c[mat_height * mat_width];
-
-    transform_subimage(a, b);
-    invsere_transform_subimage(b, c);
-    printf("_____\n");
-    print_mat(a);    
-    printf("_____\n");
-    print_mat(b);
-    printf("_____\n");
-    print_mat(c);
-*/
 
     if(msg_index < msg_len){
         printf("Full message can't be embedded in the image, embedded first %u characters (bytes) and %u bits.\n", 
@@ -562,8 +537,8 @@ int8_t reversible_DCT_decrypt(const Image * restrict st_img, uint32_t msg_len, c
     uint64_t height = st_img->height - (st_img->height % mat_height);
     uint64_t width = (st_img->width - (st_img->width % mat_width)) * channels;
 
-    float input[mat_width * mat_height];
-    float output[mat_height * mat_width];
+    long double input[mat_width * mat_height];
+    long double output[mat_height * mat_width];
 
     uint32_t msg_index = 0;
     uint8_t bit_num = 0;

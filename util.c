@@ -94,7 +94,7 @@ uint8_t max_4(uint8_t a, uint8_t b, uint8_t c, uint8_t d){
 
 uint8_t power_2(uint8_t k){
     assert(k < 8);
-    return 2 << k;
+    return 1 << k;
 }
 
 uint8_t u8_fclamp(float f){
