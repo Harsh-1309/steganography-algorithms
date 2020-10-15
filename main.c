@@ -29,10 +29,6 @@ int main(int argc, char** argv){
         const char* steg_algo_used = argv[2];
         const char* msg = argv[3];
         const char* img_path = argv[4];
-        //char msg[3];
-        /*msg[0] = (char)248;
-        msg[1] = (char)11;
-        msg[2] = '\0';*/
 
         printf("Image path: %s\n", img_path);
 

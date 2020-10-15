@@ -8,7 +8,6 @@
 
 #include "../constants.h"
 #include "../image.h"
-#include "../util.h"
 #include "reversible_DCT.h"
 
 #define mat_width 8
@@ -357,28 +356,25 @@ static uint8_t get_next_bit(const char* restrict msg, uint32_t msg_len, uint32_t
     return bit;
 }
 
-static void embed_data(long double dct[mat_height * mat_width], const char * restrict msg,
-                                    uint32_t msg_len, uint32_t * restrict msg_index, 
-                                    uint8_t * restrict bit_num)
+static void embed_data(long double dct[mat_height * mat_width], e_rDCT st_data)
 { 
     assert(dct != NULL);
-    assert(msg != NULL);
-    assert(msg_index != NULL);
-    assert(bit_num != NULL);
+    assert(st_data.stream != NULL);
+
 
     uint8_t bit;
     for(uint8_t j = 0; j < mat_height; j++){
-        if(*msg_index >= msg_len) break;
+        if(!get_rBit_stream_status(st_data.stream)) break;
 
         for(uint8_t i = 0; i < mat_width; i++){
-            if (*msg_index >= msg_len) break;
+            if(!get_rBit_stream_status(st_data.stream)) break;
             
-            if((i + j) <= P) continue;
+            if((i + j) <= st_data.p) continue;
 
-            if(Q <= dct[i_img(mat_width, j, i)]) dct[i_img(mat_width, j, i)] += Q;
-            else if(-Q >= dct[i_img(mat_width, j, i)]) dct[i_img(mat_width, j, i)] -= Q;
+            if(st_data.q <= dct[i_img(mat_width, j, i)]) dct[i_img(mat_width, j, i)] += st_data.q;
+            else if(-st_data.q >= dct[i_img(mat_width, j, i)]) dct[i_img(mat_width, j, i)] -= st_data.q;
             else {
-                bit = get_next_bit(msg, msg_len, msg_index, bit_num);
+                bit = get_bits(st_data.stream, 1);
 
                 //printf("%u %f\n", bit, dct[i_img(mat_width, j, i)]);
 
@@ -393,35 +389,30 @@ static void embed_data(long double dct[mat_height * mat_width], const char * res
     }
 }
 
-static void recover_data(const long double dct[mat_height * mat_width], 
-                                      char * restrict msg, uint32_t msg_len, uint32_t * restrict msg_index, 
-                                      uint8_t * restrict bit_num)
+static void recover_data(const long double dct[mat_height * mat_width], d_rDCT st_data)
 {
     assert(dct != NULL);
-    assert(msg != NULL);
-    assert(msg_index != NULL);
-    assert(bit_num != NULL);
+    assert(st_data.stream != NULL);
     
     for(uint8_t j = 0; j < mat_height; j++){
-        if(*msg_index >= msg_len) break;
+        if(!get_wBit_stream_status(st_data.stream)) break;
 
         for(uint8_t i = 0; i < mat_width; i++){
-            if (*msg_index >= msg_len) break;
+            if(!get_wBit_stream_status(st_data.stream)) break;;
             
-            if((i + j) <= P) continue;
+            if((i + j) <= st_data.p) continue;
 
-            if(2*Q <= dct[i_img(mat_width, j, i)]);
-            else if(dct[i_img(mat_width, j, i)] <= -2*Q);
+            if(2*st_data.q <= dct[i_img(mat_width, j, i)]);
+            else if(dct[i_img(mat_width, j, i)] <= -2*st_data.q);
             else{
                 
                 //printf("%f\n", dct[i_img(mat_width, j, i)]);
 
 
                 if( ((int32_t)abs(round(dct[i_img(mat_width, j, i)]))) % 2 == 0) 
-                    embed_bits_to_msg(msg, msg_index, bit_num, 0, 1, msg_len);
+                    write_bits(st_data.stream, 0, 1);
                 else
-                    embed_bits_to_msg(msg, msg_index, bit_num, 1, 1, msg_len);
-            } 
+                    write_bits(st_data.stream, 1, 1);            } 
 
         }
     }
@@ -431,11 +422,11 @@ static void recover_data(const long double dct[mat_height * mat_width],
 // -1 - Small image
 // -2 - 0 message
 // -3 - Error in greyscale conversion
-int8_t reversible_DCT_encrypt(Image* st_img, uint32_t msg_len, const char * restrict msg){
-    assert(st_img->img_p != NULL);
-    assert(msg != NULL);
+int8_t reversible_DCT_encrypt(e_rDCT st_data){
+    assert(st_data.st_img->img_p != NULL);
+    assert(st_data.stream != NULL);
 
-    if(msg_len == 0){
+/*    if(msg_len == 0){
         fprintf(stderr, "Error: zero size message provided.\n");
         return -2;
     }
@@ -444,8 +435,9 @@ int8_t reversible_DCT_encrypt(Image* st_img, uint32_t msg_len, const char * rest
         fprintf(stderr, "Small image");
         return -1;
     }
+*/
 
-    if(st_img->channels > 2){
+    /*if(st_img->channels > 2){
         Image grey = convert_to_greyscale(st_img);
         free_image(st_img);
         (*st_img) = grey;
@@ -454,50 +446,42 @@ int8_t reversible_DCT_encrypt(Image* st_img, uint32_t msg_len, const char * rest
             fprintf(stderr, "Error in greycale conversion.\n");
             return -3;
         }
-    }
+    }*/
 
-    uint8_t channels = st_img->channels;
-    uint64_t height = st_img->height - (st_img->height % mat_height);
-    uint64_t width = (st_img->width - (st_img->width % mat_width)) * channels;
+    uint8_t channels = st_data.st_img->channels;
+    uint64_t height = st_data.st_img->height - (st_data.st_img->height % mat_height);
+    uint64_t width = (st_data.st_img->width - (st_data.st_img->width % mat_width)) * channels;
 
     long double input[mat_width * mat_height];
     long double output[mat_height * mat_width];
 
-    uint32_t msg_index = 0;
-    uint8_t bit_num = 0;
-
     for(uint64_t j = 0; j < height; j += 8){
-        if(msg_index >= msg_len) break;
+        if(!get_rBit_stream_status(st_data.stream)) break;
 
         for(uint64_t i = 0; i < width; i += 8 * channels){
-            if(msg_index >= msg_len) break;
+            if(!get_rBit_stream_status(st_data.stream)) break;
 
             for(uint8_t k = 0; k < mat_height; k++){
                 for(uint8_t l = 0; l < mat_width; l++){
-                    input[i_img(mat_width, k, l)] = st_img->img_p[i_img(st_img->width*channels, i + l*channels, j + k)];
+                    input[i_img(mat_width, k, l)] = 
+                    st_data.st_img->img_p[i_img(st_data.st_img->width*channels, i + l*channels, j + k)];
                 }
             }
 
             transform_subimage(input, output);
-            embed_data(output, msg, msg_len, &msg_index, &bit_num);
+            embed_data(output, st_data);
             invsere_transform_subimage(output, input);
 
             for(uint8_t k = 0; k < mat_height; k++){
                 for(uint8_t l = 0; l < mat_width; l++){
-                    st_img->img_p[i_img(st_img->width*channels, i + l*channels, j + k)] = input[i_img(mat_width, k, l)];
+                    st_data.st_img->img_p[i_img(st_img->width*channels, i + l*channels, j + k)] = input[i_img(mat_width, k, l)];
                 }
             }
 
         }
     }
 
-    if(msg_index < msg_len){
-        printf("Full message can't be embedded in the image, embedded first %u characters (bytes) and %u bits.\n", 
-               msg_index, bit_num);
-        if(bit_num != 0) printf("Recovery key is: %u.\n", msg_index + 1);
-        else printf("Recovery key is: %u.\n", msg_index);
-
-    }else printf("Recovery key is: %u.\n", msg_len);
+    recovery_key_msg(st_data.stream);
 
     return 0;
 
@@ -508,11 +492,11 @@ int8_t reversible_DCT_encrypt(Image* st_img, uint32_t msg_len, const char * rest
 // -2 - image not greyscale
 // NULL character not counted in msg_len
 // msg should be zeroed 
-int8_t reversible_DCT_decrypt(const Image * restrict st_img, uint32_t msg_len, char * restrict msg){
-    assert(st_img->img_p != NULL);
-    assert(msg != NULL);
+int8_t reversible_DCT_decrypt(d_rDCT st_data){
+    assert(st_data.st_img->img_p != NULL);
+    assert(st_data.stream != NULL);
     
-    if(msg_len == 0){
+    /*if(msg_len == 0){
         return 0;
     }
 
@@ -521,33 +505,30 @@ int8_t reversible_DCT_decrypt(const Image * restrict st_img, uint32_t msg_len, c
         return -1;
     }
 
-    if(st_img->channels > 2) return -2;
+    if(st_img->channels > 2) return -2;*/
 
-    uint8_t channels = st_img->channels;
-    uint64_t height = st_img->height - (st_img->height % mat_height);
-    uint64_t width = (st_img->width - (st_img->width % mat_width)) * channels;
+    uint8_t channels = st_data.st_img->channels;
+    uint64_t height = st_data.st_img->height - (st_data.st_img->height % mat_height);
+    uint64_t width = (st_data.st_img->width - (st_data.st_img->width % mat_width)) * channels;
 
     long double input[mat_width * mat_height];
     long double output[mat_height * mat_width];
 
-    uint32_t msg_index = 0;
-    uint8_t bit_num = 0;
-
-
     for(uint64_t j = 0; j < height; j += 8){
-        if(msg_index >= msg_len) break;
+        if(!get_wBit_stream_status(st_data.stream)) break;
 
         for(uint64_t i = 0; i < width; i += 8 * channels){
-            if(msg_index >= msg_len) break;
+            if(!get_wBit_stream_status(st_data.stream)) break;
 
             for(uint8_t k = 0; k < mat_height; k++){
                 for(uint8_t l = 0; l < mat_width; l++){
-                    input[i_img(mat_width, k, l)] = st_img->img_p[i_img(st_img->width*channels, i + l*channels, j + k)];
+                    input[i_img(mat_width, k, l)] = 
+                    st_data.st_img->img_p[i_img(st_data.st_img->width*channels, i + l*channels, j + k)];
                 }
             }
 
             transform_subimage(input, output);
-            recover_data(output, msg, msg_len, &msg_index, &bit_num);
+            recover_data(output, d_rDCT st_data);
         }
     }
 

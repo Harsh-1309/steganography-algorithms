@@ -16,6 +16,8 @@ typedef struct uint8_quad {
     uint8_t w;
 } u8_Quad;
 
+typedef struct read_bit_stream rBit_stream;
+typedef struct writed_bit_stream wBit_stream;
 
 extern bool str_case_cmp(const char * p1, const char * p2);
 extern uint8_t get_bit_from_char(uint8_t n, uint8_t c);
@@ -33,5 +35,18 @@ extern uint8_t k_bit_lsb(uint8_t pixel, uint8_t value, uint8_t k);
 extern uint8_t recover_k_bit_lsb(uint8_t pixel, uint8_t k);
 extern void embed_bits_to_msg(char * restrict msg, uint32_t * restrict msg_index, uint8_t * restrict bit_num, 
                              uint8_t bits, uint8_t num_bits, uint32_t msg_len);
+
+void recovery_key_msg(const rBit_stream * restrict stream);
+
+extern rBit_stream* create_read_bitstream(const char * restrict buffer, uint32_t buf_len);
+extern void delete_read_bitstream(rBit_stream * restrict stream);
+extern bool get_rBit_stream_status(const rBit_stream * restrict s);
+extern uint8_t get_bits(rBit_stream * restrict stream, uint8_t k);
+
+
+extern wBit_stream* create_write_bitstream(uint32_t buf_len);
+extern void delete_write_bitstream(wBit_stream * restrict stream);
+extern bool get_wBit_stream_status(const wBit_stream * restrict s);
+extern void write_bits(wBit_stream * restrict stream, uint8_t bits, uint8_t k);
 
 #endif
