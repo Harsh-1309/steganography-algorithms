@@ -534,3 +534,54 @@ int8_t reversible_DCT_decrypt(d_rDCT st_data){
 
     return 0;
 }
+
+void destroy_encrypt_struct(e_rDCT * restrict st){
+    assert(st != NULL);
+    assert(st->st_img != NULL);
+    assert(st->stream != NULL);
+
+    free_image(*(st->st_img));
+    free(st->st_img);
+    delete_read_bitstream(st->stream);
+}
+
+void destroy_decrypt_struct(d_rDCT * restrict st){
+    assert(st != NULL);
+    assert(st->st_img != NULL);
+    assert(st->stream != NULL);    
+
+    free_image(*(st->st_img));
+    free(st->st_img);
+    delete_write_bitstream(st->stream);
+}
+
+e_rDCT construct_encrypt_struct(const char * restrict img_path, uint32_t msg_len, 
+                                const char * restrict msg, uint8_t p, uint32_t q){
+    e_rDCT er;
+    er.st_img = malloc(sizeof(st_img));
+    if (er.st_img == NULL){
+        fprintf(stderr, "Unable to allocate memory for the image.\n");
+        return (e_rDCT){NULL, NULL, 0, 0};
+    }
+
+    *(er.st_img) = load_image(img_path);
+    //Convert to greyscale
+
+    er.stream = create_read_bitstream(msg, msg_len);
+    er.p = p;
+    er.q = q;
+
+    return er;
+}
+
+d_rDCT construct_decrypt_struct(const char * restrict img_path, uint32_t msg_len, uint8_t p, uint32_t q){
+    d_rDCT dr;
+    dr.st_img = malloc(sizeof(st_img));
+    
+    if (dr.st_img == NULL){
+        fprintf(stderr, "Unable to allocate memory for the image.\n");
+        return (d_rDCT){NULL, NULL, 0, 0};
+    }
+    //check greyscale
+
+}
