@@ -72,13 +72,15 @@ int main(int argc, char** argv){
             write_png(output, st_img);  
         }else if(str_case_cmp(steg_algo_used, "Reversible_DCT") == true){
             printf("Reversible_DCT\n");
-            reversible_DCT_encrypt(&st_img, strlen(msg), msg);
+            e_rDCT er = construct_encrypt_struct(img_path, strlen(msg), msg, 1, 4);
+            reversible_DCT_encrypt(er);
 
             char output[strlen(img_path) + 1 + 3];
             string_cpy(output, strlen(img_path), img_path);
             append_en_to_image_name(output, strlen(img_path), 'r');
 
-            write_png(output, st_img);  
+            write_png(output, *(er.st_img));
+            destroy_encrypt_struct(&er);  
         }
 
         free_image(&st_img);
@@ -117,10 +119,10 @@ int main(int argc, char** argv){
             edge_detect_decrypt(&st_img, msg_len, demsg);
             printf("%s\n", demsg);
         }else if(str_case_cmp(steg_algo_used, "Reversible_DCT") == true){
-            char demsg[msg_len + 1];
-            for(int i =0; i<=msg_len;i++) demsg[i] = '\0';
-            reversible_DCT_decrypt(&st_img, msg_len, demsg);
-            printf("%s\n", demsg);
+            d_rDCT dr = construct_decrypt_struct(img_path, msg_len, 1, 4);
+            reversible_DCT_decrypt(dr);
+            print_buffer(dr.stream);
+            destroy_decrypt_struct(&dr);
         }
 
 

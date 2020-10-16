@@ -182,7 +182,7 @@ static uint8_t get_k_lsb_bits(char const * restrict buf, uint32_t k){
 rBit_stream* create_read_bitstream(const char * restrict buffer, uint32_t buf_len){
     assert(buffer != NULL);
 
-    rBit_stream* s = malloc(sizeof(s));
+    rBit_stream* s = malloc(sizeof(rBit_stream));
     if(s == NULL){
         fprintf(stderr, "Unable to allocate memory for read stream.\n");
         return NULL;
@@ -313,9 +313,13 @@ void write_bits(wBit_stream * restrict stream, uint8_t bits, uint8_t k){
 void recovery_key_msg(const rBit_stream * restrict stream){
     if(stream->status){
         printf("Full message can't be embedded in the image, embedded first %u characters (bytes) and %u bits.\n", 
-               status->cur_index, status->cur_bit);
-        if(bit_num != 0) printf("Recovery key is: %u.\n", status->cur_index + 1);
-        else printf("Recovery key is: %u.\n", status->cur_index);
+               stream->cur_index, stream->cur_bit);
+        if(stream->cur_bit != 0) printf("Recovery key is: %u.\n", stream->cur_index + 1);
+        else printf("Recovery key is: %u.\n", stream->cur_index);
 
-    }else printf("Recovery key is: %u.\n", status->cur_index);
+    }else printf("Recovery key is: %u.\n", stream->cur_index);
+}
+
+void print_buffer(const wBit_stream * restrict s){
+    fprintf(stdout, "Recovered message: %s\n", s->buffer);
 }

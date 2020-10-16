@@ -42,7 +42,7 @@ void free_image(Image* img){
 Image convert_to_greyscale(const Image* img){
     Image grey = {img->width, img->height, img->channels == 4 ? 2 : 1, NULL, 0, MALLOC}; 
     grey.image_size = grey.width * grey.height * grey.channels;
-    grey.img_p = malloc(grey.width * grey.height * grey.channels * sizeof(uint8_t));
+    grey.img_p = malloc(grey.image_size * sizeof(uint8_t));
     
     if(grey.img_p == NULL){
         fprintf(stderr, "Failed to allocate memory for the greyscale conversion.\n");

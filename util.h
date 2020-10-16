@@ -47,6 +47,7 @@ extern uint8_t get_bits(rBit_stream * restrict stream, uint8_t k);
 extern wBit_stream* create_write_bitstream(uint32_t buf_len);
 extern void delete_write_bitstream(wBit_stream * restrict stream);
 extern bool get_wBit_stream_status(const wBit_stream * restrict s);
+extern void print_buffer(const wBit_stream * restrict s);
 extern void write_bits(wBit_stream * restrict stream, uint8_t bits, uint8_t k);
 
 #endif
