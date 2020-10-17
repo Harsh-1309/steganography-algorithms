@@ -34,7 +34,7 @@ extern uint8_t u8_fclamp(float f);
 extern uint8_t k_bit_lsb(uint8_t pixel, uint8_t value, uint8_t k);
 extern uint8_t recover_k_bit_lsb(uint8_t pixel, uint8_t k);
 extern void embed_bits_to_msg(char * restrict msg, uint32_t * restrict msg_index, uint8_t * restrict bit_num, 
-                             uint8_t bits, uint8_t num_bits, uint32_t msg_len);
+                              uint8_t bits, uint8_t num_bits, uint32_t msg_len);
 
 void recovery_key_msg(const rBit_stream * restrict stream);
 

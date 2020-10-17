@@ -23,24 +23,15 @@ typedef struct d_rdct {
     int32_t q;
 } d_rDCT;
 
-// Return values:
-// -1 - Small image
-// -2 - 0 message
-// -3 - Error in greyscale conversion
-e_rDCT construct_encrypt_struct(const char * restrict img_path, uint32_t msg_len, 
+
+e_rDCT construct_e_rdct_struct(const char * restrict img_path, uint32_t msg_len, 
                                 const char * restrict msg, uint8_t p, int32_t q);
-void destroy_encrypt_struct(e_rDCT * restrict st);
+void destroy_e_rdct_struct(e_rDCT * restrict st);
+void reversible_DCT_encrypt(e_rDCT st_data);
 
-int8_t reversible_DCT_encrypt(e_rDCT st_data);
-
-// Return values:
-// -1 - Small image
-// -2 - image not greyscale
-// NULL character not counted in msg_len
-// msg should be zeroed 
-d_rDCT construct_decrypt_struct(const char * restrict img_path, 
+d_rDCT construct_d_rdct_struct(const char * restrict img_path, 
                                 uint32_t msg_len, uint8_t p, int32_t q);
-void destroy_decrypt_struct(d_rDCT * restrict st);
-int8_t reversible_DCT_decrypt(d_rDCT st_data);
+void destroy_d_rdct_struct(d_rDCT * restrict st);
+void reversible_DCT_decrypt(d_rDCT st_data);
 
 #endif

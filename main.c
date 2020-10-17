@@ -54,13 +54,16 @@ int main(int argc, char** argv){
             write_png(output, st_img);  
         }else if(str_case_cmp(steg_algo_used, "PVD_4px") == true){
             printf("PVD 4px\n");
-            pvd_4px_encrypt(&st_img, strlen(msg), msg);
+            e_PVD4x ep = construct_e_PVD4x_struct(img_path, strlen(msg), msg, 3, 4, 15);
+            pvd_4px_encrypt(ep);
 
             char output[strlen(img_path) + 1 + 3];
             string_cpy(output, strlen(img_path), img_path);
             append_en_to_image_name(output, strlen(img_path), '4');
 
-            write_png(output, st_img);  
+            write_png(output, *(ep.st_img));
+            destroy_e_PVD4x_struct(&ep);
+
         }else if(str_case_cmp(steg_algo_used, "Edge_LSB") == true){
             printf("Edge_LSB\n");
             edge_detect_encrypt(&st_img, strlen(msg), msg);
@@ -72,7 +75,7 @@ int main(int argc, char** argv){
             write_png(output, st_img);  
         }else if(str_case_cmp(steg_algo_used, "Reversible_DCT") == true){
             printf("Reversible_DCT\n");
-            e_rDCT er = construct_encrypt_struct(img_path, strlen(msg), msg, 1, 4);
+            e_rDCT er = construct_e_rdct_struct(img_path, strlen(msg), msg, 1, 4);
             reversible_DCT_encrypt(er);
 
             char output[strlen(img_path) + 1 + 3];
@@ -80,7 +83,7 @@ int main(int argc, char** argv){
             append_en_to_image_name(output, strlen(img_path), 'r');
 
             write_png(output, *(er.st_img));
-            destroy_encrypt_struct(&er);  
+            destroy_e_rdct_struct(&er);  
         }
 
         free_image(&st_img);
@@ -109,23 +112,22 @@ int main(int argc, char** argv){
             pvd_grayscale_decrypt(&st_img, msg_len, demsg);
             printf("%s\n", demsg);
         }else if(str_case_cmp(steg_algo_used, "PVD_4px") == true){
-            char demsg[msg_len + 1];
-            for(int i =0; i<=msg_len;i++) demsg[i] = '\0';
-            pvd_4px_decrypt(&st_img, msg_len, demsg);
-            printf("%s\n", demsg);
+            d_PVD4x dp = construct_d_PVD4x_struct(img_path, msg_len, 3, 4, 15);
+            pvd_4px_decrypt(dp);
+            print_buffer(dp.stream);
+            destroy_d_PVD4x_struct(&dp);
         }else if(str_case_cmp(steg_algo_used, "Edge_LSB") == true){
             char demsg[msg_len + 1];
             for(int i =0; i<=msg_len;i++) demsg[i] = '\0';
             edge_detect_decrypt(&st_img, msg_len, demsg);
             printf("%s\n", demsg);
         }else if(str_case_cmp(steg_algo_used, "Reversible_DCT") == true){
-            d_rDCT dr = construct_decrypt_struct(img_path, msg_len, 1, 4);
+            d_rDCT dr = construct_d_rdct_struct(img_path, msg_len, 1, 4);
             reversible_DCT_decrypt(dr);
             print_buffer(dr.stream);
-            destroy_decrypt_struct(&dr);
+            destroy_d_rdct_struct(&dr);
         }
-
-
+        
         free_image(&st_img);
     }else{
         fprintf(stderr, "Invalid arguments provided: %s exiting ...\n", argv[1]);

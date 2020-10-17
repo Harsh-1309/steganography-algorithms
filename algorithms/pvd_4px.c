@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
 #include <tgmath.h>
@@ -11,10 +12,6 @@
 #include "../util.h"
 #include "pvd_4px.h"
 
-//2^(kl) <= T <= 2^(kh)
-#define K_L 3
-#define K_H 4
-#define T 15
 
 
 
@@ -45,11 +42,12 @@ static uint8_t modified_lsb(int16_t delta, uint8_t lsb_val, uint8_t k){
     assert(0);
 }
 
-static bool is_error_block(const u8_Quad * restrict vals, float avg_diff){
+static bool is_error_block(const u8_Quad * restrict vals, float avg_diff, uint8_t t){
+
     uint8_t min_minus_max = max_4(vals->x, vals->y, vals->z, vals->w) 
                             - min_4(vals->x, vals->y, vals->z, vals->w);
     
-    if(avg_diff <= T && min_minus_max > 2 * T + 2){
+    if(avg_diff <= t && min_minus_max > 2 * t + 2){
         return true;
     }
 
@@ -69,16 +67,14 @@ static uint16_t calc_squared_diff(const u8_Quad * restrict q1, const u8_Quad * r
     + (q1->w - q2->w)*(q1->w - q2->w);
 }
 
-static u8_Quad embed_data(u8_Quad old_vals, const char * restrict msg,  uint32_t msg_len,
-                                  uint32_t * restrict msg_index, uint8_t * restrict bit_num,
-                                  bool * restrict skip)
+static u8_Quad embed_data(u8_Quad old_vals, e_PVD4x st_data, bool * restrict skip)
 {         
     float avg_diff = calc_avg_diff(&old_vals);
 
-    uint8_t k = T >= avg_diff ? K_L : K_H; 
+    uint8_t k = st_data.t >= avg_diff ? st_data.k_l : st_data.k_h; 
 
     //Error block
-    if(is_error_block(&old_vals, avg_diff)){
+    if(is_error_block(&old_vals, avg_diff, st_data.t)){
         *skip = true;
         return (u8_Quad){0, 0, 0, 0};
     }
@@ -88,16 +84,16 @@ static u8_Quad embed_data(u8_Quad old_vals, const char * restrict msg,  uint32_t
     uint8_t val = 0;
     u8_Quad LSB_vals = {};
 
-    val = bits_to_val(msg, k, msg_len, bit_num, msg_index);
+    val = get_bits(st_data.stream, k);
     LSB_vals.x = k_bit_lsb(old_vals.x, val, k);
     
-    val = bits_to_val(msg, k, msg_len, bit_num, msg_index);
+    val = get_bits(st_data.stream, k);
     LSB_vals.y = k_bit_lsb(old_vals.y, val, k);
     
-    val = bits_to_val(msg, k,  msg_len, bit_num, msg_index);
+    val = get_bits(st_data.stream, k);
     LSB_vals.z = k_bit_lsb(old_vals.z, val, k);
     
-    val = bits_to_val(msg, k,  msg_len, bit_num, msg_index);
+    val = get_bits(st_data.stream, k);
     LSB_vals.w = k_bit_lsb(old_vals.w, val, k);
     
     //Modified LSB
@@ -129,8 +125,10 @@ static u8_Quad embed_data(u8_Quad old_vals, const char * restrict msg,  uint32_t
                     temp.w = LSB_vals.w + mul[i3] * a;
 
                     a_diff = calc_avg_diff(&temp);
-                    if((T >= a_diff && avg_diff > T) || (T >= avg_diff && a_diff > T)) continue;
-                    if(is_error_block(&temp, a_diff)) continue;
+                    if((st_data.t >= a_diff && avg_diff > st_data.t) 
+                    || (st_data.t >= avg_diff && a_diff > st_data.t)) continue;
+                    
+                    if(is_error_block(&temp, a_diff, st_data.t)) continue;
                     uitemp = calc_squared_diff(&temp, &old_vals);
                     
                     if(uitemp < min_quad_sd){
@@ -147,81 +145,49 @@ static u8_Quad embed_data(u8_Quad old_vals, const char * restrict msg,  uint32_t
 }
 
 
-static void recover_data(u8_Quad old_vals, char * restrict msg, uint32_t msg_len, 
-                        uint32_t * restrict msg_index, uint8_t * restrict bit_num)
+static void recover_data(u8_Quad old_vals, d_PVD4x st_data)
+
 {
     float avg_diff = calc_avg_diff(&old_vals);
-    uint8_t k = T >= avg_diff ? K_L : K_H;
+    uint8_t k = st_data.t >= avg_diff ? st_data.k_l : st_data.k_h;
     
-    if(is_error_block(&old_vals, avg_diff)) return;
-
-    
+    if(is_error_block(&old_vals, avg_diff, st_data.t)) return;
     
     uint8_t pixels[4] = {old_vals.x, old_vals.y, old_vals.z, old_vals.w};
-    uint8_t num_bits = k, bits = 0;
+    uint8_t bits = 0;
     for(uint8_t i = 0; i < 4; i++){
-        bits = recover_k_bit_lsb(pixels[i], num_bits);
-        embed_bits_to_msg(msg, msg_index, bit_num, bits, num_bits, msg_len);
+        bits = recover_k_bit_lsb(pixels[i], k);
+        write_bits(st_data.stream, bits, k);
     }
 } 
 
-// Return values:
-// -1 - 0 image size
-// -2 - 0 message
-// -3 - Error in greyscale conversion
-int8_t pvd_4px_encrypt(Image* st_img, uint32_t msg_len, const char * restrict msg){
-    assert(st_img->img_p != NULL);
-    assert(msg != NULL);
 
-    if(st_img->image_size == 0){
-        fprintf(stderr, "Error: zero size image provided.\n");
-        return -1;
-    }
-    
-    if(msg_len == 0){
-        fprintf(stderr, "Error: zero size message provided.\n");
-        return -2;
-    }
-
-
-    if(st_img->channels > 2){
-        Image grey = convert_to_greyscale(st_img);
-        free_image(st_img);
-        (*st_img) = grey;
-
-        if(st_img->img_p == NULL){
-            fprintf(stderr, "Error in greycale conversion.\n");
-            return -3;
-        }
-    }
+void pvd_4px_encrypt(e_PVD4x st_data){
+    assert(st_data.st_img != NULL);
+    assert(st_data.stream != NULL);
 
     bool skip = false;
 
-
-    const uint8_t grey_index = st_img->channels - 1;
-    uint8_t bit_num = 0;
+    Image* st_img = st_data.st_img;
+    const uint8_t channels = st_img->channels;
     uint8_t *g1 = NULL, *g2 = NULL, *g3 = NULL, *g4 = NULL;
 
     u8_Quad new_val;
 
-    uint32_t msg_index = 0;
     const uint64_t height = (st_img->height - st_img->height % 2);
     const uint64_t it_width = (st_img->width - st_img->width % 2) * st_img->channels;
     const uint64_t img_buf_width = st_img->width * st_img->channels;
 
     for(uint64_t j = 0; j < height; j +=2){        
-        if(msg_index >= msg_len) break;
+        if(!get_rBit_stream_status(st_data.stream)) break;
         for(uint64_t i = 0; i < it_width; i += 2*st_img->channels){
-            if(msg_index >= msg_len) break;
 
             g1 = &st_img->img_p[i_img(img_buf_width, i, j)];
-            g2 = &st_img->img_p[i_img(img_buf_width, i + grey_index + 1, j)];
+            g2 = &st_img->img_p[i_img(img_buf_width, i + channels, j)];
             g3 = &st_img->img_p[i_img(img_buf_width, i, j + 1)];
-            g4 = &st_img->img_p[i_img(img_buf_width, i + grey_index + 1, j + 1)];
+            g4 = &st_img->img_p[i_img(img_buf_width, i + channels, j + 1)];
 
-            new_val = embed_data((u8_Quad){*g1, *g2, *g3, *g4}, msg, msg_len, 
-                                  &msg_index, &bit_num,
-                                  &skip);
+            new_val = embed_data((u8_Quad){*g1, *g2, *g3, *g4}, st_data, &skip);
 
             if(skip) continue;
             
@@ -230,64 +196,183 @@ int8_t pvd_4px_encrypt(Image* st_img, uint32_t msg_len, const char * restrict ms
             *g3 = new_val.z;
             *g4 = new_val.w;
 
+            if(!get_rBit_stream_status(st_data.stream)) break;
         }
     }
 
-    if(msg_index < msg_len){
-        printf("Full message can't be embedded in the image, embedded first %u characters (bytes) and %u bits.\n", 
-               msg_index, bit_num);
-        if(bit_num != 0) printf("Recovery key is: %u.\n", msg_index + 1);
-        else printf("Recovery key is: %u.\n", msg_index);
-
-    }else printf("Recovery key is: %u.\n", msg_len);
-
-    return 0;
+    recovery_key_msg(st_data.stream);
 }
 
-// Return values:
-// -1 - 0 image size
-// -2 - image not greyscale
-// NULL character not counted in msg_len
-//msg should be zeroed 
-int8_t pvd_4px_decrypt(const Image * restrict st_img, uint32_t msg_len, char * restrict msg){
-    assert(st_img->img_p != NULL);
-    assert(msg != NULL);
+void pvd_4px_decrypt(d_PVD4x st_data){
+    assert(st_data.st_img != NULL);
+    assert(st_data.stream != NULL);
 
-    if(msg_len == 0){
-        return 0;
-    }
-
-    if(st_img->image_size == 0){
-        fprintf(stderr, "Error: zero size image provided.\n");
-        return -1;
-    }
-    
-    if(st_img->channels > 2) return -2;
-
-    const uint8_t grey_index = st_img->channels - 1;
-    uint8_t bit_num = 0;
+    Image* st_img = st_data.st_img;
+    const uint8_t channels = st_img->channels;
     uint8_t g1, g2, g3, g4;
 
-    uint32_t msg_index = 0;
     const uint64_t height = (st_img->height - st_img->height % 2);
     const uint64_t it_width = (st_img->width - st_img->width % 2) * st_img->channels;
     const uint64_t img_buf_width = st_img->width * st_img->channels;
 
     for(uint64_t j = 0; j < height; j +=2){        
-        if(msg_index >= msg_len) break;
+        if(!get_wBit_stream_status(st_data.stream)) break;
         for(uint64_t i = 0; i < it_width; i += 2*st_img->channels){
-            if(msg_index >= msg_len) break;
+
 
             g1 = st_img->img_p[i_img(img_buf_width, i, j)];
-            g2 = st_img->img_p[i_img(img_buf_width, i + grey_index + 1, j)];
+            g2 = st_img->img_p[i_img(img_buf_width, i + channels, j)];
             g3 = st_img->img_p[i_img(img_buf_width, i, j + 1)];
-            g4 = st_img->img_p[i_img(img_buf_width, i + grey_index + 1, j + 1)];
+            g4 = st_img->img_p[i_img(img_buf_width, i + channels, j + 1)];
 
-            recover_data((u8_Quad){g1, g2, g3, g4}, msg, msg_len, 
-                        &msg_index, &bit_num);
-
+            recover_data((u8_Quad){g1, g2, g3, g4}, st_data);
+            
+            if(!get_wBit_stream_status(st_data.stream)) break;
         }
     }
 
-    return 0;
+}
+
+void destroy_e_PVD4x_struct(e_PVD4x * restrict st){
+    assert(st != NULL);
+
+    free_image(st->st_img);
+    free(st->st_img);
+    delete_read_bitstream(st->stream);
+}
+
+
+e_PVD4x construct_e_PVD4x_struct(const char * restrict img_path, uint32_t msg_len,
+                                 const char * restrict msg, uint8_t k_l, uint8_t k_h, uint8_t t){
+    
+    assert(img_path != NULL);
+    assert(msg != NULL);
+    assert(msg_len != 0);
+
+    if(k_l > 5 || k_l == 0){
+        fprintf(stderr, "Invalid value for k_l.\n");
+        return (e_PVD4x){NULL, NULL, 0, 0, 0};        
+    }
+
+    if(k_h > 5 || k_h == 0){
+        fprintf(stderr, "Invalid value for k_h.\n");
+        return (e_PVD4x){NULL, NULL, 0, 0, 0};        
+    }
+
+    if(k_h < k_l){
+        fprintf(stderr, "k_h is smaller than k_l.\n");
+        return (e_PVD4x){NULL, NULL, 0, 0, 0};      
+    }
+
+    if(power_2(k_l) > t || t > power_2(k_h)){
+        fprintf(stderr, "Invalid value for t.\n");
+        return (e_PVD4x){NULL, NULL, 0, 0, 0};            
+    }
+
+    e_PVD4x st;
+    Image* img = malloc(sizeof(Image));
+    if(img == NULL){
+        fprintf(stderr, "Unable to allocate memory for image.\n");
+        return (e_PVD4x){NULL, NULL, 0, 0, 0};
+    }
+
+    *(img) = load_image(img_path);
+    if(img->img_p == NULL){
+        fprintf(stderr, "Unable to allocate memory for image.\n");
+        return (e_PVD4x){NULL, NULL, 0, 0, 0};
+    }
+
+    //Convert to greyscale
+    if(img->channels > 2){
+        Image grey = convert_to_greyscale(img);
+
+        if(grey.img_p == NULL){
+            fprintf(stderr, "Error in greycale conversion.\n");
+            return (e_PVD4x){NULL, NULL, 0, 0};
+        }
+
+        free_image(img);
+        *(img) = grey;
+    }    
+
+    rBit_stream* stream = create_read_bitstream(msg, msg_len);
+    if(stream == NULL){
+        fprintf(stderr, "Unable to allocate memory for message bit stream.\n");
+        return (e_PVD4x){NULL, NULL, 0, 0, 0};
+    }
+
+    st.st_img = img;
+    st.stream = stream;
+    st.k_l = k_l;
+    st.k_h = k_h;
+    st.t = t;
+
+    return st;
+}
+
+void destroy_d_PVD4x_struct(d_PVD4x * restrict st){
+    assert(st != NULL);
+
+    free_image(st->st_img);
+    free(st->st_img);
+    delete_write_bitstream(st->stream);    
+}
+
+d_PVD4x construct_d_PVD4x_struct(const char * restrict img_path, uint32_t msg_len, 
+                                 uint8_t k_l, uint8_t k_h, uint8_t t){
+    assert(img_path != NULL);
+    assert(msg_len != 0);
+
+    if(k_l > 5 || k_l == 0){
+        fprintf(stderr, "Invalid value for k_l.\n");
+        return (d_PVD4x){NULL, NULL, 0, 0, 0};        
+    }
+
+    if(k_h > 5 || k_h == 0){
+        fprintf(stderr, "Invalid value for k_h.\n");
+        return (d_PVD4x){NULL, NULL, 0, 0, 0};        
+    }
+
+    if(k_h < k_l){
+        fprintf(stderr, "k_h is smaller than k_l.\n");
+        return (d_PVD4x){NULL, NULL, 0, 0, 0};      
+    }
+
+    if(power_2(k_l) > t || t > power_2(k_h)){
+        fprintf(stderr, "Invalid value for t.\n");
+        return (d_PVD4x){NULL, NULL, 0, 0, 0};            
+    }
+
+    d_PVD4x st;
+    Image* img = malloc(sizeof(Image));
+    if(img == NULL){
+        fprintf(stderr, "Unable to allocate memory for image.\n");
+        return (d_PVD4x){NULL, NULL, 0, 0, 0};
+    }
+
+    *(img) = load_image(img_path);
+    if(img->img_p == NULL){
+        fprintf(stderr, "Unable to allocate memory for image.\n");
+        return (d_PVD4x){NULL, NULL, 0, 0, 0};
+    }
+    
+    //check greyscale
+    if(img->channels > 2){
+        fprintf(stderr, "Not a greyscale image.\n");
+        return (d_PVD4x){NULL, NULL, 0, 0};
+    }
+
+    wBit_stream* stream = create_write_bitstream(msg_len);
+    if(stream == NULL){
+        fprintf(stderr, "Unable to allocate memory for message bit stream.\n");
+        return (d_PVD4x){NULL, NULL, 0, 0, 0};
+    }
+
+    st.st_img = img;
+    st.stream = stream;
+    st.k_l = k_l;
+    st.k_h = k_h;
+    st.t = t;
+
+    return st;
 }
