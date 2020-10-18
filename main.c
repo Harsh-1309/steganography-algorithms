@@ -45,13 +45,16 @@ int main(int argc, char** argv){
             write_png(output, st_img);
         }else if(str_case_cmp(steg_algo_used, "PVD_greyscale") == true){
             printf("PVD greyscale\n");
-            pvd_grayscale_encrypt(&st_img, strlen(msg), msg);
+            uint8_t par[6] = {8, 8, 16, 32, 64, 128};
+            e_PVD_GREY eg = construct_e_pvd_grey_struct(img_path, strlen(msg), msg, 6, par);
+            pvd_grayscale_encrypt(eg);
 
             char output[strlen(img_path) + 1 + 3];
             string_cpy(output, strlen(img_path), img_path);
             append_en_to_image_name(output, strlen(img_path), 'p');
 
-            write_png(output, st_img);  
+            write_png(output, *(eg.st_img));
+            destroy_e_pvd_grey_struct(&eg);  
         }else if(str_case_cmp(steg_algo_used, "PVD_4px") == true){
             printf("PVD 4px\n");
             e_PVD4x ep = construct_e_PVD4x_struct(img_path, strlen(msg), msg, 3, 4, 15);
@@ -107,10 +110,12 @@ int main(int argc, char** argv){
             simple_lsb_decrypt(st_img, msg_len, demsg);
             printf("%s\n", demsg);
         }else if(str_case_cmp(steg_algo_used, "PVD_greyscale") == true){
-            char demsg[msg_len + 1];
-            for(int i =0; i<=msg_len;i++) demsg[i] = '\0';
-            pvd_grayscale_decrypt(&st_img, msg_len, demsg);
-            printf("%s\n", demsg);
+            //Paritioning scheme 8, 8, 16, 32, 64, 128
+            uint8_t par[6] = {8, 8, 16, 32, 64, 128};
+            d_PVD_GREY dg = construct_d_pvd_grey_struct(img_path, msg_len, 6, par);
+            pvd_grayscale_decrypt(dg);
+            print_buffer(dg.stream);
+            destroy_d_pvd_grey_struct(&dg);
         }else if(str_case_cmp(steg_algo_used, "PVD_4px") == true){
             d_PVD4x dp = construct_d_PVD4x_struct(img_path, msg_len, 3, 4, 15);
             pvd_4px_decrypt(dp);
@@ -127,7 +132,7 @@ int main(int argc, char** argv){
             print_buffer(dr.stream);
             destroy_d_rdct_struct(&dr);
         }
-        
+
         free_image(&st_img);
     }else{
         fprintf(stderr, "Invalid arguments provided: %s exiting ...\n", argv[1]);

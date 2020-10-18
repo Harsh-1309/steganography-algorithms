@@ -130,6 +130,11 @@ void embed_bits_to_msg(char * restrict msg, uint32_t * restrict msg_index, uint8
     }
 }
 
+
+bool is_power_2(uint8_t p){
+    return (p != 0) && !(p & (p - 1));
+}
+
 typedef struct read_bit_stream {
     const char * buffer;
     uint32_t buf_len;

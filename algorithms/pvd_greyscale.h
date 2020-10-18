@@ -7,18 +7,33 @@
 #include <stdint.h>
 #include "../image.h"
 
-// Return values:
-// -1 - 0 image size
-// -2 - 0 message
-// -3 - Error in greyscale conversion
-int8_t pvd_grayscale_encrypt(Image* st_img, uint32_t msg_len, const char * restrict msg);
+typedef struct e_pvd_grey {
+    Image* st_img;
+    rBit_stream* stream;
+    uint8_t num_partitions;
+    uint8_t * parition_widths;
+} e_PVD_GREY;
+
+typedef struct d_pvd_grey {
+    Image* st_img;
+    wBit_stream* stream;
+    uint8_t num_partitions;
+    uint8_t * parition_widths;
+} d_PVD_GREY;
 
 
-// Return values:
-// -1 - 0 image size
-// -2 - image not greyscale
-// NULL character not counted in msg_len
-//msg should be zeroed 
-int8_t pvd_grayscale_decrypt(const Image * restrict st_img, uint32_t msg_len, char * restrict msg);
+e_PVD_GREY construct_e_pvd_grey_struct(const char * restrict img_path, uint32_t msg_len,
+                                       const char * restrict msg, uint8_t num_partitions, 
+                                       uint8_t * parition_widths);
+void destroy_e_pvd_grey_struct(e_PVD_GREY * restrict st);
+void pvd_grayscale_encrypt(e_PVD_GREY st_data);
+
+
+d_PVD_GREY construct_d_pvd_grey_struct(const char * restrict img_path, 
+                                       uint32_t msg_len, uint8_t num_partitions, 
+                                       uint8_t * parition_widths);
+void destroy_d_pvd_grey_struct(d_PVD_GREY * restrict st);
+void pvd_grayscale_decrypt(d_PVD_GREY st_data);
+
 
 #endif 
