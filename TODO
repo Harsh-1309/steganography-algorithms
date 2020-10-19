@@ -3,15 +3,14 @@
 - Command line getopt
 - Input checking in main
 - More algorithms
-- Rewrite bits_to_val function (ok for now)
 - Message length simple lsb
 
 
 
 - Parameters in fuzzy and canny edge detection
-- Partition scheme in pvd_greyscale
-- kl, T and kh in pvd_4px
 - Parameters in edge detect lsb
 - Seperate canny and fuzzy edge detection functions 
 - Apply blur before fuzzy 
 - Precision problem in reversible DCT (IMP)
+- pvd_greyscale peepo oooooooooooooooooooooop
+- Compile using -Wall -Wextra -pedantic 

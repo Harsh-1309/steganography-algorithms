@@ -5,25 +5,30 @@
 #include <tgmath.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include "../constants.h"
 #include "../image.h"
-#include "../util.h"
+
 
 #include "pvd_greyscale.h"
 
+typedef struct partitions{
+    uint8_t size;
+    uint8_t partitions[];
+} Partitions;
 
 //Paritioning scheme 8, 8, 16, 32, 64, 128
-static u8_Pair find_difference_range(uint8_t d, uint8_t num_partitions, const uint8_t * restrict partition_widths){
+static u8_Pair find_difference_range(uint8_t d, const Partitions* restrict par){
     assert(d <= 255);
 
     uint8_t p = 0;
-    for(uint8_t i = 0; i < num_partitions; i++){
-        if(d >= p && d <= p +(partition_widths[i] - 1)){
-            return (u8_Pair) {p, p + (partition_widths[i] - 1)};
+    for(uint8_t i = 0; i < par->size; i++){
+        if(d >= p && d <= p +(par->partitions[i] - 1)){
+            return (u8_Pair) {p, p + (par->partitions[i] - 1)};
         }
 
-        p += partition_widths[i]; 
+        p += par->partitions[i]; 
     }
 
     assert(0);
@@ -58,7 +63,7 @@ static u8_Pair embed_data(u8_Pair old_vals, e_PVD_GREY st_data, bool * restrict 
     bool out_bounds = false;
 
     d = old_vals.y - old_vals.x;
-    range = find_difference_range(abs(d), st_data.num_partitions, st_data.parition_widths);
+    range = find_difference_range(abs(d), st_data.partitions);
     //Checking if the pixel is eligible or not for embedding
     embedding_func(old_vals, abs(d), range.y, &out_bounds);
     if(out_bounds){
@@ -92,7 +97,7 @@ static void recover_data(u8_Pair old_vals, d_PVD_GREY st_data)
 
     d_new = old_vals.y - old_vals.x;
 
-    range = find_difference_range(abs(d_new), st_data.num_partitions, st_data.parition_widths);
+    range = find_difference_range(abs(d_new), st_data.partitions);
     embedding_func(old_vals, abs(d_new), range.y, &out_bounds);
     if(out_bounds) return;
  
@@ -116,15 +121,19 @@ void pvd_grayscale_encrypt(e_PVD_GREY st_data){
 
     uint64_t i = 0;
     uint64_t width = st_img->width * st_img->channels;
-    for(uint64_t j = 0; j != st_img->height && j < st_img->height; j++){
+    for(uint64_t j = 0; j < st_img->height; j++){
         if(!get_rBit_stream_status(st_data.stream)) break;
 
         if(!flip){
-            if(skip_first_pixel) i = channels;
+            if(skip_first_pixel) {
+                i = channels;
+                skip_first_pixel = false;
+            }
             else i = 0;
 
-            for(; i != width && i < width; i += 2*st_img->channels){
-
+            for(; i < width; i += 2*st_img->channels){
+                //Checking if full message is embedded or not
+                if(!get_rBit_stream_status(st_data.stream)) break;
 
                 //Getting pixel values
                 g1 = &(st_img->img_p[i_img(width, i, j)]);
@@ -146,15 +155,18 @@ void pvd_grayscale_encrypt(e_PVD_GREY st_data){
                 *g1 = new_val.x;
                 *g2 = new_val.y;
                 //printf(" NEW: (%u, %u)\n", *g1, *g2);
-
-                //Checking if full message is embedded or not
-                if(!get_rBit_stream_status(st_data.stream)) break;
             }
         }else{
-            if(skip_first_pixel) i = (width - (channels)) -  (channels);
+            if(skip_first_pixel){
+                i = (width - (channels)) -  (channels);
+                skip_first_pixel = false;
+            }
             else i = width - (channels);
 
             for(;; i -= 2*st_img->channels){
+                //Checking if full message is embedded or not
+                if(!get_rBit_stream_status(st_data.stream)) break;
+
                 //Getting pixel values
                 g1 = &(st_img->img_p[i_img(width, i, j)]);
                 if(i == 0){
@@ -178,9 +190,6 @@ void pvd_grayscale_encrypt(e_PVD_GREY st_data){
 
                 //printf(" NEW: (%u, %u)\n", *g1, *g2);
                 if (i < 2*st_img->channels) break;
-
-                //Checking if full message is embedded or not
-                if(!get_rBit_stream_status(st_data.stream)) break;
             }
         }
 
@@ -200,14 +209,20 @@ void pvd_grayscale_decrypt(d_PVD_GREY st_data){
 
     uint64_t i = 0;
     uint64_t width = st_img->width * st_img->channels;
-    for(uint64_t j = 0; j != st_img->height && j < st_img->height; j++){
+    for(uint64_t j = 0; j < st_img->height; j++){
        if(!get_wBit_stream_status(st_data.stream)) break;
 
         if(!flip){
-            if(skip_first_pixel) i = channels;
+            if(skip_first_pixel) {
+                i = channels;
+                skip_first_pixel = false;
+            }
             else i = 0;
 
-            for(; i != width && i < width; i += 2*st_img->channels){
+            for(; i < width; i += 2*st_img->channels){
+                //Checking if full message is embedded or not
+                if(!get_wBit_stream_status(st_data.stream)) break;
+
                 //Getting pixel values
                 g1 = (st_img->img_p[i_img(width, i, j)]);
                 if(i == width - (channels)){
@@ -221,14 +236,17 @@ void pvd_grayscale_decrypt(d_PVD_GREY st_data){
 
                 recover_data((u8_Pair){g1, g2}, st_data);
                 
-                //Checking if full message is embedded or not
-                if(!get_wBit_stream_status(st_data.stream)) break;
+
             }
         }else{
-            if(skip_first_pixel) i = (width - (channels)) -  (channels);
-            else i = width - (channels);
+            if(skip_first_pixel) {
+                i = (width - (channels)) -  (channels);
+                skip_first_pixel = false;
+            }else i = width - (channels);
 
             for(;; i -= 2*st_img->channels){
+                //Checking if full message is embedded or not
+                if(!get_wBit_stream_status(st_data.stream)) break;
                 //Getting pixel values
                 g1 = (st_img->img_p[i_img(width, i, j)]);
                 if(i == 0){
@@ -243,9 +261,6 @@ void pvd_grayscale_decrypt(d_PVD_GREY st_data){
                 recover_data((u8_Pair){g1, g2}, st_data);
 
                 if (i < 2*st_img->channels) break;
-                
-                //Checking if full message is embedded or not
-                if(!get_wBit_stream_status(st_data.stream)) break;
             }
         }
 
@@ -262,42 +277,24 @@ void destroy_e_pvd_grey_struct(e_PVD_GREY * restrict st){
 }
 
 e_PVD_GREY construct_e_pvd_grey_struct(const char * restrict img_path, uint32_t msg_len,
-                                       const char * restrict msg, uint8_t num_partitions, 
-                                       uint8_t * parition_widths){
+                                       const char * restrict msg, const Partitions* restrict p){
 
     assert(img_path != NULL);
     assert(msg != NULL);
-    assert(parition_widths != NULL);
-
-    uint16_t parition_sum = 0;
-    for(uint8_t i = 0; i < num_partitions; i++){
-        if(!is_power_2(parition_widths[i])){
-            fprintf(stderr, "Bad paritioning, partition width should be power of two.\n");
-            return (e_PVD_GREY){NULL, NULL, 0, NULL};            
-        }
-        parition_sum += parition_widths[i];
-        if(parition_sum > 256){
-            fprintf(stderr, "Bad paritioning, sum adds to more than 256.\n");
-            return (e_PVD_GREY){NULL, NULL, 0, NULL};
-        }
-    }
-
-    if(parition_sum < 255){
-        fprintf(stderr, "Bad paritioning, sum doesn't add up to 255.\n");
-        return (e_PVD_GREY){NULL, NULL, 0, NULL};
-    }
+    assert(p != NULL);
 
     e_PVD_GREY st;
+
     Image* img = malloc(sizeof(Image));
     if(img == NULL){
         fprintf(stderr, "Unable to allocate memory for image.\n");
-        return (e_PVD_GREY){NULL, NULL, 0, NULL};
+        return (e_PVD_GREY){NULL, NULL, NULL};
     }
 
     *(img) = load_image(img_path);
     if(img->img_p == NULL){
         fprintf(stderr, "Unable to allocate memory for image.\n");
-        return (e_PVD_GREY){NULL, NULL, 0, NULL};
+        return (e_PVD_GREY){NULL, NULL, NULL};
     }
 
     //Convert to greyscale
@@ -306,7 +303,7 @@ e_PVD_GREY construct_e_pvd_grey_struct(const char * restrict img_path, uint32_t 
 
         if(grey.img_p == NULL){
             fprintf(stderr, "Error in greycale conversion.\n");
-            return (e_PVD_GREY){NULL, NULL, 0, NULL};
+            return (e_PVD_GREY){NULL, NULL, NULL};
         }
 
         free_image(img);
@@ -316,13 +313,12 @@ e_PVD_GREY construct_e_pvd_grey_struct(const char * restrict img_path, uint32_t 
     rBit_stream* stream = create_read_bitstream(msg, msg_len);
     if(stream == NULL){
         fprintf(stderr, "Unable to allocate memory for message bit stream.\n");
-        return (e_PVD_GREY){NULL, NULL, 0, NULL};
+        return (e_PVD_GREY){NULL, NULL, NULL};
     }
 
     st.st_img = img;
     st.stream = stream;
-    st.num_partitions = num_partitions;
-    st.parition_widths = parition_widths;
+    st.partitions = p;
 
     return st;
 }
@@ -336,59 +332,81 @@ void destroy_d_pvd_grey_struct(d_PVD_GREY * restrict st){
 }
 
 d_PVD_GREY construct_d_pvd_grey_struct(const char * restrict img_path, 
-                                       uint32_t msg_len, uint8_t num_partitions, 
-                                       uint8_t * parition_widths){
+                                       uint32_t msg_len, const Partitions* restrict p){
 
     assert(img_path != NULL);
-    assert(parition_widths != NULL);
-
-    uint16_t parition_sum = 0;
-    for(uint8_t i = 0; i < num_partitions; i++){
-        if(!is_power_2(parition_widths[i])){
-            fprintf(stderr, "Bad paritioning, partition length should be power of two.\n");
-            return (d_PVD_GREY){NULL, NULL, 0, NULL};            
-        }
-        parition_sum += parition_widths[i];
-        if(parition_sum > 256){
-            fprintf(stderr, "Bad paritioning, sum adds to more than 256.\n");
-            return (d_PVD_GREY){NULL, NULL, 0, NULL};
-        }
-    }
-
-    if(parition_sum < 255){
-        fprintf(stderr, "Bad paritioning, sum doesn't add up to 255.\n");
-        return (d_PVD_GREY){NULL, NULL, 0, NULL};
-    }
-
+    assert(p != NULL);
     d_PVD_GREY st;
+
+
     Image* img = malloc(sizeof(Image));
     if(img == NULL){
         fprintf(stderr, "Unable to allocate memory for image.\n");
-        return (d_PVD_GREY){NULL, NULL, 0, NULL};
+        return (d_PVD_GREY){NULL, NULL, NULL};
     }
 
     *(img) = load_image(img_path);
     if(img->img_p == NULL){
         fprintf(stderr, "Unable to allocate memory for image.\n");
-        return (d_PVD_GREY){NULL, NULL, 0, NULL};
+        return (d_PVD_GREY){NULL, NULL, NULL};
     }
     
     //check greyscale
     if(img->channels > 2){
-        fprintf(stderr, "Not a greyscale image. %u\n", img->channels);
-        return (d_PVD_GREY){NULL, NULL, 0, NULL};
+        fprintf(stderr, "Not a greyscale image.\n");
+        return (d_PVD_GREY){NULL, NULL, NULL};
     }
 
     wBit_stream* stream = create_write_bitstream(msg_len);
     if(stream == NULL){
         fprintf(stderr, "Unable to allocate memory for message bit stream.\n");
-        return (d_PVD_GREY){NULL, NULL, 0, NULL};
+        return (d_PVD_GREY){NULL, NULL, NULL};
     }
 
     st.st_img = img;
     st.stream = stream;
-    st.num_partitions = num_partitions;
-    st.parition_widths = parition_widths;
+    st.partitions = p;
 
     return st;
+}
+
+Partitions* create_partitions(uint8_t num, ...){
+    Partitions* par = malloc(sizeof(Partitions) + sizeof(uint8_t[num]));
+
+    va_list list;
+    va_start(list, num);
+    uint16_t partition_sum = 0;
+    uint8_t v;
+    for(uint8_t i = 0; i < num; i++){
+        v = va_arg(list, int);
+
+        if(!is_power_2(v)){
+            fprintf(stderr, "Bad paritioning, partition length should be power of two.\n");
+            free(par);
+            return NULL;            
+        }
+        partition_sum += v;
+
+        if(partition_sum > 256){
+            fprintf(stderr, "Bad paritioning, sum adds to more than 256.\n");
+            free(par);
+            return NULL;
+        }
+
+        par->partitions[i] = v;
+    }
+
+    if(partition_sum < 256){
+        fprintf(stderr, "Bad paritioning, sum doesn't add up to 256.\n");
+        free(par);
+        return NULL;
+    }
+
+    va_end(list);
+    par->size = num;
+    return par;
+}
+
+void destroy_partitions(Partitions * p){
+    free(p);
 }

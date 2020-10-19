@@ -32,8 +32,7 @@ int main(int argc, char** argv){
 
         printf("Image path: %s\n", img_path);
 
-        Image st_img = load_image(img_path);
-
+        /*
         if(str_case_cmp(steg_algo_used, "simple_lsb") == true){
             printf("SIMPLE LSB\n");            
             simple_lsb_encrypt(st_img, strlen(msg), msg);
@@ -43,10 +42,12 @@ int main(int argc, char** argv){
             append_en_to_image_name(output, strlen(img_path), 's');
 
             write_png(output, st_img);
-        }else if(str_case_cmp(steg_algo_used, "PVD_greyscale") == true){
+        }else 
+        */
+        if(str_case_cmp(steg_algo_used, "PVD_greyscale") == true){
             printf("PVD greyscale\n");
-            uint8_t par[6] = {8, 8, 16, 32, 64, 128};
-            e_PVD_GREY eg = construct_e_pvd_grey_struct(img_path, strlen(msg), msg, 6, par);
+            Partitions* par = create_partitions(6, 8, 8, 16, 32, 64, 128);
+            e_PVD_GREY eg = construct_e_pvd_grey_struct(img_path, strlen(msg), msg, par);
             pvd_grayscale_encrypt(eg);
 
             char output[strlen(img_path) + 1 + 3];
@@ -54,7 +55,8 @@ int main(int argc, char** argv){
             append_en_to_image_name(output, strlen(img_path), 'p');
 
             write_png(output, *(eg.st_img));
-            destroy_e_pvd_grey_struct(&eg);  
+            destroy_e_pvd_grey_struct(&eg);
+            destroy_partitions(par);  
         }else if(str_case_cmp(steg_algo_used, "PVD_4px") == true){
             printf("PVD 4px\n");
             e_PVD4x ep = construct_e_PVD4x_struct(img_path, strlen(msg), msg, 3, 4, 15);
@@ -69,13 +71,16 @@ int main(int argc, char** argv){
 
         }else if(str_case_cmp(steg_algo_used, "Edge_LSB") == true){
             printf("Edge_LSB\n");
-            edge_detect_encrypt(&st_img, strlen(msg), msg);
+            e_Edge_Detect ed = construct_e_edge_detect_struct(img_path, strlen(msg), msg, 3, 1, 5);
+
+            edge_detect_encrypt(ed);
 
             char output[strlen(img_path) + 1 + 3];
             string_cpy(output, strlen(img_path), img_path);
             append_en_to_image_name(output, strlen(img_path), 'e');
 
-            write_png(output, st_img);  
+            write_png(output, *(ed.st_img));  
+            destroy_e_edge_detect_struct(&ed);
         }else if(str_case_cmp(steg_algo_used, "Reversible_DCT") == true){
             printf("Reversible_DCT\n");
             e_rDCT er = construct_e_rdct_struct(img_path, strlen(msg), msg, 1, 4);
@@ -89,7 +94,6 @@ int main(int argc, char** argv){
             destroy_e_rdct_struct(&er);  
         }
 
-        free_image(&st_img);
     }else if(str_case_cmp(argv[1], "-d") == true){
         if(argc < 4){
            fprintf(stderr, "Insufficient number of arguments provided exiting ...\n");
@@ -103,37 +107,37 @@ int main(int argc, char** argv){
         printf("Image path: %s\n", img_path);
         printf("Message len: %d\n", msg_len);
 
-        Image st_img = load_image(img_path);
-
+        /*
         if(str_case_cmp(steg_algo_used, "simple_lsb") == true){
             char demsg[msg_len + 1];
             simple_lsb_decrypt(st_img, msg_len, demsg);
             printf("%s\n", demsg);
-        }else if(str_case_cmp(steg_algo_used, "PVD_greyscale") == true){
+        }else 
+        */
+        if(str_case_cmp(steg_algo_used, "PVD_greyscale") == true){
             //Paritioning scheme 8, 8, 16, 32, 64, 128
-            uint8_t par[6] = {8, 8, 16, 32, 64, 128};
-            d_PVD_GREY dg = construct_d_pvd_grey_struct(img_path, msg_len, 6, par);
+            Partitions* par  = create_partitions(6, 8, 8, 16, 32, 64, 128);
+            d_PVD_GREY dg = construct_d_pvd_grey_struct(img_path, msg_len, par);
             pvd_grayscale_decrypt(dg);
             print_buffer(dg.stream);
             destroy_d_pvd_grey_struct(&dg);
+            destroy_partitions(par);
         }else if(str_case_cmp(steg_algo_used, "PVD_4px") == true){
             d_PVD4x dp = construct_d_PVD4x_struct(img_path, msg_len, 3, 4, 15);
             pvd_4px_decrypt(dp);
             print_buffer(dp.stream);
             destroy_d_PVD4x_struct(&dp);
         }else if(str_case_cmp(steg_algo_used, "Edge_LSB") == true){
-            char demsg[msg_len + 1];
-            for(int i =0; i<=msg_len;i++) demsg[i] = '\0';
-            edge_detect_decrypt(&st_img, msg_len, demsg);
-            printf("%s\n", demsg);
+            d_Edge_Detect ed = construct_d_edge_detect_struct(img_path, msg_len, 3, 1, 5);
+            edge_detect_decrypt(ed);
+            print_buffer(ed.stream);
+            destroy_d_edge_detect_struct(&ed);
         }else if(str_case_cmp(steg_algo_used, "Reversible_DCT") == true){
             d_rDCT dr = construct_d_rdct_struct(img_path, msg_len, 1, 4);
             reversible_DCT_decrypt(dr);
             print_buffer(dr.stream);
             destroy_d_rdct_struct(&dr);
         }
-
-        free_image(&st_img);
     }else{
         fprintf(stderr, "Invalid arguments provided: %s exiting ...\n", argv[1]);
         exit(1);

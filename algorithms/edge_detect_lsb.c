@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
 #include <tgmath.h>
@@ -9,17 +10,14 @@
 #include "../image.h"
 #include "../util.h"
 #include "edge_detect_lsb.h"
-
+/*
 const static uint8_t block_size = 3;
 const static uint8_t non_edge_bits = 1;
 const static uint8_t edge_bits = 5; 
+*/
 
-// Return values:
-// -1 - 0 image size
-// -2 - 0 message
-// -3 - Error in greyscale conversion
-int8_t edge_detect_encrypt(Image* st_img, uint32_t msg_len, const char * restrict msg){
-    assert(st_img->img_p != NULL);
+void edge_detect_encrypt(e_Edge_Detect st_data){
+    /*assert(st_img->img_p != NULL);
     assert(msg != NULL);
 
     if(st_img->image_size == 0){
@@ -47,58 +45,45 @@ int8_t edge_detect_encrypt(Image* st_img, uint32_t msg_len, const char * restric
             return -3;
         }
     }
+    write_png(".//images//eee_emma.png", edge); 
+*/
 
+    Image * st_img = st_data.st_img;
+    
     Image edge = hybrid_edge_detector(st_img);
-
     const uint8_t channels = st_img->channels;
-    uint8_t bit_num = 0;
 
-    uint32_t msg_index = 0;
-    const uint64_t size = edge.image_size - (edge.image_size % block_size); 
+    const uint64_t size = edge.image_size - (edge.image_size % st_data.block_size); 
 
     uint8_t block_id = 0;
     uint8_t bits = 0;
-    for(uint64_t i = 0; i < size; i += block_size * channels){
-        if(msg_index >= msg_len) break;
+    for(uint64_t i = 0; i < size; i += st_data.block_size * channels){
+        if(!get_rBit_stream_status(st_data.stream)) break;
 
-        for(uint8_t j = 1; j < block_size; j++){
-            if(msg_index >= msg_len) break;
+        for(uint8_t j = 1; j < st_data.block_size; j++){
+            if(!get_rBit_stream_status(st_data.stream)) break;
 
             if(edge.img_p[i + j * channels] == 255){
                 block_id += power_2(j - 1);
-                bits = bits_to_val(msg, edge_bits, msg_len, &bit_num, &msg_index);
-                st_img->img_p[i + j * channels] = k_bit_lsb(st_img->img_p[i + j * channels], bits, edge_bits);
+                bits = get_bits(st_data.stream, st_data.edge_bits);
+                st_img->img_p[i + j * channels] = k_bit_lsb(st_img->img_p[i + j * channels], bits, st_data.edge_bits);
             }else{
-                bits = bits_to_val(msg, non_edge_bits, msg_len, &bit_num, &msg_index);
-                st_img->img_p[i + j * channels] = k_bit_lsb(st_img->img_p[i + j * channels], bits, non_edge_bits);
+                bits = get_bits(st_data.stream, st_data.non_edge_bits);
+                st_img->img_p[i + j * channels] = k_bit_lsb(st_img->img_p[i + j * channels], bits, st_data.non_edge_bits);
             }
         }
+        st_img->img_p[i] = k_bit_lsb(st_img->img_p[i], block_id, st_data.block_size - 1);
 
-        st_img->img_p[i] = k_bit_lsb(st_img->img_p[i], block_id, block_size - 1);
         block_id = 0;
     }
 
-    if(msg_index < msg_len){
-        printf("Full message can't be embedded in the image, embedded first %u characters (bytes) and %u bits.\n", 
-               msg_index, bit_num);
-        if(bit_num != 0) printf("Recovery key is: %u.\n", msg_index + 1);
-        else printf("Recovery key is: %u.\n", msg_index);
-
-    }else printf("Recovery key is: %u.\n", msg_len);
+    recovery_key_msg(st_data.stream);
 
     free_image(&edge);
-
-    return 0;
 }
 
-
-// Return values:
-// -1 - 0 image size
-// -2 - image not greyscale
-// NULL character not counted in msg_len
-//msg should be zeroed 
-int8_t edge_detect_decrypt(const Image * restrict st_img, uint32_t msg_len, char * restrict msg){
-    assert(st_img->img_p != NULL);
+void edge_detect_decrypt(d_Edge_Detect st_data){
+    /*assert(st_img->img_p != NULL);
     assert(msg != NULL);
 
     if(msg_len == 0){
@@ -110,34 +95,166 @@ int8_t edge_detect_decrypt(const Image * restrict st_img, uint32_t msg_len, char
         return -1;
     }
 
-    if(st_img->channels > 2) return -2;
-
+    if(st_img->channels > 2) return -2;*/
+    Image * st_img = st_data.st_img;
     const uint8_t channels = st_img->channels;
-    uint8_t bit_num = 0;
-
-    uint32_t msg_index = 0;
-    const uint64_t size = st_img->image_size - st_img->image_size % block_size; 
+    const uint64_t size = st_img->image_size - st_img->image_size % st_data.block_size; 
 
     uint8_t block_id = 0;
     uint8_t bits = 0;
 
-    for(uint64_t i = 0; i < size; i += block_size * channels){
-        if(msg_index >= msg_len) break;
+    for(uint64_t i = 0; i < size; i += st_data.block_size * channels){
+        if(!get_wBit_stream_status(st_data.stream)) break;
 
-        block_id = recover_k_bit_lsb(st_img->img_p[i], block_size - 1);
+        block_id = recover_k_bit_lsb(st_img->img_p[i], st_data.block_size - 1);
 
-        for(uint8_t j = 1; j < block_size; j++, block_id >>= 1){
-            if(msg_index >= msg_len) break;
-            if((block_id >> 1) == 1){
-                bits = recover_k_bit_lsb(st_img->img_p[i + j * channels], edge_bits);
-                embed_bits_to_msg(msg, &msg_index, &bit_num, bits, edge_bits, msg_len);
+        for(uint8_t j = 1; j < st_data.block_size; j++, block_id >>= 1){
+            if(!get_wBit_stream_status(st_data.stream)) break;
+            if((block_id & 1) == 1){
+                bits = recover_k_bit_lsb(st_img->img_p[i + j * channels], st_data.edge_bits);
+                write_bits(st_data.stream, bits, st_data.edge_bits);
             }else{
-                bits = recover_k_bit_lsb(st_img->img_p[i + j * channels], non_edge_bits);
-                embed_bits_to_msg(msg, &msg_index, &bit_num, bits, non_edge_bits, msg_len);
+                bits = recover_k_bit_lsb(st_img->img_p[i + j * channels], st_data.non_edge_bits);
+                write_bits(st_data.stream, bits, st_data.non_edge_bits);
             }
 
         }
+
+    }
+}
+
+void destroy_e_edge_detect_struct(e_Edge_Detect * restrict st){
+    assert(st != NULL);
+
+    free_image(st->st_img);
+    free(st->st_img);
+    delete_read_bitstream(st->stream);        
+}
+
+e_Edge_Detect construct_e_edge_detect_struct(const char * restrict img_path, uint32_t msg_len,
+                                             const char * restrict msg, uint8_t block_size, 
+                                             uint8_t non_edge_bits,
+                                             uint8_t edge_bits){
+
+    assert(img_path != NULL);
+    assert(msg != NULL);
+
+    if(block_size == 0){
+        fprintf(stderr, "Invalid block size, must be greater than 0.\n");
+        return (e_Edge_Detect){NULL, NULL, 0, 0, 0};
     }
 
-    return 0;
+    if(edge_bits > 8){
+        fprintf(stderr, "Invalid value for number of bits to embed in edge pixels.\n");
+        return (e_Edge_Detect){NULL, NULL, 0, 0, 0};
+    }
+
+    if(non_edge_bits > 8){
+        fprintf(stderr, "Invalid value for number of bits to embed in non-edge pixels.\n");
+        return (e_Edge_Detect){NULL, NULL, 0, 0, 0};
+    }
+
+    e_Edge_Detect st;
+
+    Image* img = malloc(sizeof(Image));
+    if(img == NULL){
+        fprintf(stderr, "Unable to allocate memory for image.\n");
+        return (e_Edge_Detect){NULL, NULL, 0, 0, 0};
+    }
+
+    *(img) = load_image(img_path);
+    if(img->img_p == NULL){
+        fprintf(stderr, "Unable to allocate memory for image.\n");
+        return (e_Edge_Detect){NULL, NULL, 0, 0, 0};
+    }
+
+    //Convert to greyscale
+    if(img->channels > 2){
+        Image grey = convert_to_greyscale(img);
+
+        if(grey.img_p == NULL){
+            fprintf(stderr, "Error in greycale conversion.\n");
+            return (e_Edge_Detect){NULL, NULL, 0, 0, 0};
+        }
+
+        free_image(img);
+        *(img) = grey;
+    }    
+
+    rBit_stream* stream = create_read_bitstream(msg, msg_len);
+    if(stream == NULL){
+        fprintf(stderr, "Unable to allocate memory for message bit stream.\n");
+        return (e_Edge_Detect){NULL, NULL, 0, 0, 0};
+    }
+
+    st.st_img = img;
+    st.stream = stream;
+    st.block_size = block_size;
+    st.non_edge_bits = non_edge_bits;
+    st.edge_bits = edge_bits;
+
+    return st;
+}
+
+void destroy_d_edge_detect_struct(d_Edge_Detect * restrict st){
+    assert(st != NULL);
+
+    free_image(st->st_img);
+    free(st->st_img);
+    delete_write_bitstream(st->stream);        
+}
+
+d_Edge_Detect construct_d_edge_detect_struct(const char * restrict img_path, uint32_t msg_len,
+                                             uint8_t block_size, uint8_t non_edge_bits, 
+                                             uint8_t edge_bits){
+    assert(img_path != NULL);
+
+    if(block_size == 0){
+        fprintf(stderr, "Invalid block size, must be greater than 0.\n");
+        return (d_Edge_Detect){NULL, NULL, 0, 0, 0};
+    }
+
+    if(edge_bits > 8){
+        fprintf(stderr, "Invalid value for number of bits to embed in edge pixels.\n");
+        return (d_Edge_Detect){NULL, NULL, 0, 0, 0};
+    }
+
+    if(non_edge_bits > 8){
+        fprintf(stderr, "Invalid value for number of bits to embed in non-edge pixels.\n");
+        return (d_Edge_Detect){NULL, NULL, 0, 0, 0};
+    }
+
+    d_Edge_Detect st;
+
+    Image* img = malloc(sizeof(Image));
+    if(img == NULL){
+        fprintf(stderr, "Unable to allocate memory for image.\n");
+        return (d_Edge_Detect){NULL, NULL, 0, 0, 0};
+    }
+
+    *(img) = load_image(img_path);
+    if(img->img_p == NULL){
+        fprintf(stderr, "Unable to allocate memory for image.\n");
+        return (d_Edge_Detect){NULL, NULL, 0, 0, 0};
+    }
+
+    //check greyscale
+    if(img->channels > 2){
+        fprintf(stderr, "Not a greyscale image.\n");
+        return (d_Edge_Detect){NULL, NULL, 0, 0, 0};
+    }    
+
+    wBit_stream* stream = create_write_bitstream(msg_len);
+    if(stream == NULL){
+        fprintf(stderr, "Unable to allocate memory for message bit stream.\n");
+        return (d_Edge_Detect){NULL, NULL, 0, 0, 0};
+    }
+
+    st.st_img = img;
+    st.stream = stream;
+    st.block_size = block_size;
+    st.non_edge_bits = non_edge_bits;
+    st.edge_bits = edge_bits;
+
+    return st;  
 }
