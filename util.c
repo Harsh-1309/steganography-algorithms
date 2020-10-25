@@ -285,3 +285,52 @@ void recovery_key_msg(const rBit_stream * restrict stream){
 void print_buffer(const wBit_stream * restrict s){
     fprintf(stdout, "Recovered message: %s\n", s->buffer);
 }
+
+
+
+SList* create_linked_list(){
+    SList* l = malloc(sizeof(SList));
+    if(l == NULL){
+        fprintf(stderr, "Can't create the linked list.\n");
+        return NULL;
+    }
+    
+    l->size = 0; l->head = l->tail = NULL;
+
+    return l;
+}
+
+void delete_linked_list(SList* l){
+    assert(l != NULL);
+
+    Node* nxt;
+    Node* cur = l->head;
+    for(uint64_t i = 0; i < l->size; i++, cur = nxt){
+        nxt = cur->nxt;
+        free(cur);
+    }
+
+    free(l);
+}
+
+void append_list(SList* l, uint64_t x, uint64_t y){
+    Node* node = malloc(sizeof(Node));
+    node->x = x;
+    node->y = y;
+    node->nxt = NULL;
+    
+    l->size++;
+    
+    if(l->head == NULL){
+        l->head = l->tail = node;
+        return;
+    }else if (l->head == l->tail){
+        l->head->nxt = node;
+        l->tail = node;
+
+        return;
+    }
+
+    l->tail->nxt = node;
+    l->tail = node;
+}

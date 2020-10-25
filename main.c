@@ -44,6 +44,14 @@ int main(int argc, char** argv){
             write_png(output, st_img);
         }else 
         */
+
+        Image img = load_image(img_path);
+        
+        //Image grey = convert_to_greyscale(&img);
+        //Integral_Image* ii = create_integral_image(&img);
+        SList* l = create_linked_list();
+        free(det_of_hessian(&img, 1, 2));
+
         if(str_case_cmp(steg_algo_used, "PVD_greyscale") == true){
             printf("PVD greyscale\n");
             Partitions* par = create_partitions(6, 8, 8, 16, 32, 64, 128);

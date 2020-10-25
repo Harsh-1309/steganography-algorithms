@@ -10,44 +10,8 @@
 #include "../image.h"
 #include "../util.h"
 #include "edge_detect_lsb.h"
-/*
-const static uint8_t block_size = 3;
-const static uint8_t non_edge_bits = 1;
-const static uint8_t edge_bits = 5; 
-*/
 
 void edge_detect_encrypt(e_Edge_Detect st_data){
-    /*assert(st_img->img_p != NULL);
-    assert(msg != NULL);
-
-    if(st_img->image_size == 0){
-        fprintf(stderr, "Error: zero size image provided.\n");
-        return -1;
-    }
-    
-    if(msg_len == 0){
-        fprintf(stderr, "Error: zero size message provided.\n");
-        return -2;
-    }
-
-    if(st_img->channels > 2){
-        Image grey = convert_to_greyscale(st_img);
-        free_image(st_img);
-        st_img->width = grey.width;
-        st_img->height = grey.height;
-        st_img->channels = grey.channels;
-        st_img->img_p = grey.img_p;
-        st_img->image_size = grey.image_size;
-        st_img->ic = grey.ic;
-
-        if(st_img->img_p == NULL){
-            fprintf(stderr, "Error in greycale conversion.\n");
-            return -3;
-        }
-    }
-    write_png(".//images//eee_emma.png", edge); 
-*/
-
     Image * st_img = st_data.st_img;
     
     Image edge = hybrid_edge_detector(st_img);
@@ -83,19 +47,6 @@ void edge_detect_encrypt(e_Edge_Detect st_data){
 }
 
 void edge_detect_decrypt(d_Edge_Detect st_data){
-    /*assert(st_img->img_p != NULL);
-    assert(msg != NULL);
-
-    if(msg_len == 0){
-        return 0;
-    }
-
-    if(st_img->image_size == 0){
-        fprintf(stderr, "Error: zero size image provided.\n");
-        return -1;
-    }
-
-    if(st_img->channels > 2) return -2;*/
     Image * st_img = st_data.st_img;
     const uint8_t channels = st_img->channels;
     const uint64_t size = st_img->image_size - st_img->image_size % st_data.block_size; 
