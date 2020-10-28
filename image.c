@@ -56,11 +56,23 @@ uint8_t get_pixel(const Image* img, uint64_t x, uint64_t y, uint8_t channel){
     return img->img_p[i_img(img->width * img->channels, x * img->channels, y) + channel];
 }
 
-extern void set_pixel(Image* img, uint64_t x, uint64_t y, uint8_t channel, uint8_t value){
+void set_pixel(Image* img, uint64_t x, uint64_t y, uint8_t channel, uint8_t value){
     if(channel >= img->channels) return;
     if(x >= img->width || y >= img->height) return;
 
     img->img_p[i_img(img->width * img->channels, x * img->channels, y) + channel] = value;
+}
+
+uint64_t get_ipixel(const Integral_Image* img, uint64_t x, uint64_t y){
+    if(x >= img->width || y >= img->height) return 0;
+
+    return img->integral[i_img(img->width, x, y)];
+}
+
+void set_ipixel(Integral_Image* img, uint64_t x, uint64_t y, uint64_t value){
+    if(x >= img->width || y >= img->height) return;
+
+    img->integral[i_img(img->width, x, y)] = value;
 }
 
 Image convert_to_greyscale(const Image* img){
@@ -479,6 +491,7 @@ Image highpass_filter(const Image* img){
 
 }*/
 
+/*
 static uint64_t sum_image(const Image * img, uint64_t w, uint64_t h){
     uint64_t sum = 0;
     for(uint64_t j = 0; j <= h; j++){
@@ -488,7 +501,7 @@ static uint64_t sum_image(const Image * img, uint64_t w, uint64_t h){
     }
 
     return sum;
-}
+}*/
 
 //Image can be symmetrically extended.
 Integral_Image* create_integral_image(const Image * img){
@@ -512,9 +525,19 @@ Integral_Image* create_integral_image(const Image * img){
     ii_img->height = img->height;
     ii_img->image_size = img->width * img->height;
 
-    for(uint64_t j = 0; j < ii_img->height; j++){
-        for(uint64_t i = 0; i < ii_img->width; i++){
-            ii_img->integral[i_img(ii_img->width, i, j)] = sum_image(img, i, j);
+    set_ipixel(ii_img, 0, 0, get_pixel(img, 0, 0, 0));
+
+    for(uint64_t i = 1; i < ii_img->width; i++){
+        set_ipixel(ii_img, i, 0, get_pixel(img, i, 0, 0) + get_ipixel(ii_img, i - 1, 0));    
+    }
+
+    uint64_t s;
+    for(uint64_t j = 1; j < ii_img->height; j++){
+        s = get_pixel(img, 0, j, 0);
+        set_ipixel(ii_img, 0, j, get_ipixel(ii_img, 0, j - 1) + s);
+        for(uint64_t i = 1; i < ii_img->width; i++){
+            s += get_pixel(img, i, j, 0);
+            set_ipixel(ii_img, i, j, get_ipixel(ii_img, i, j - 1) + s);
         }
     }
 
@@ -527,14 +550,51 @@ void destroy_integral_image(Integral_Image * ii_img){
 }
 
 
-/*//b, d are +ve
-//a, c are -ve
 static uint64_t box_filter(const Integral_Image * ii_img, int8_t a, int8_t b, int8_t c, int8_t d, 
                            uint64_t i, uint64_t j){
     
     uint64_t u1, u2, u3, u4;
-    if((i + a) >= ii_img->width || (j + c) >= ii_img->height){
-        u1 = 0;
+    uint64_t right, bottom, left, top;
+    
+    const uint64_t width = ii_img->width;
+    const uint64_t height = ii_img->height;
+
+    if(b > 0 && (i + b) >= width) right = width - 1;
+    else if(b < 0 && i < b * (-1)) right = 0; 
+    else right = i + b;
+
+    if(d > 0 && (j + d) >= height) bottom = height - 1;
+    else if (d < 0 && j < d * (-1)) bottom = 0;
+    else bottom = j + d;
+
+    if(a > 0 && (i + a) >= width) left = width - 1;
+    else if (a < 0 && i < a * (-1)) left = 0;
+    else left = i + a;
+
+    if(c > 0 && (j + c) >= height) top = height - 1;
+    else if (c < 0 && j < c * (-1)) top = 0;
+    else top = j + c;
+
+    if(top == 0 && bottom == 0 && left == 0 && right == 0) return 0;
+
+    u1 = get_ipixel(ii_img, right, bottom);
+    if(top == 0) u2 = 0; 
+    else u2 = get_ipixel(ii_img, right, top - 1);
+    
+    if(left == 0) u3 = 0;
+    else u3 = get_ipixel(ii_img, left - 1, bottom);
+
+    if(left == 0 || top == 0) u4 = 0;
+    else u4 = get_ipixel(ii_img, left - 1, top - 1);
+
+    /*if((i + a) >= ii_img->width || (j + c) >= ii_img->height){
+        if((i + a) >= ii_img->width && (j + c) < ii_img->height){
+            u1 = ii_img->integral[i_img(ii_img->width, ii_img->width - 1, j + c)];
+        }else if((i + a) < ii_img->width && (j + c) >= ii_img->height){
+            u1 = ii_img->integral[i_img(ii_img->width, i + a, ii_img->height - 1)];
+        }else{
+            u1 = ii_img->integral[i_img(ii_img->width, ii_img->width - 1, ii_img->height - 1)];
+        }
     }else{
         u1 = ii_img->integral[i_img(ii_img->width, i + a, j + c)];
     }
@@ -555,21 +615,35 @@ static uint64_t box_filter(const Integral_Image * ii_img, int8_t a, int8_t b, in
         u4 = 0;
     }else{
         u4 = ii_img->integral[i_img(ii_img->width, i - b - 1, j + c)];
-    }
+    }*/
 
-    return u1 - u2 + u3 - u4;
+    return u1 - u2 - u3 + u4;
 }
 
-static int32_t Dyy(const Image * img, uint64_t i, uint64_t j, uint8_t scale, int8_t* dyy_filer){
-    /*uint64_t b1 = box_filter(ii_img, l-1, l-1, (3*l-1)/2, (3*l-1)/2, i, j);
-    uint64_t b2 = box_filter(ii_img, l-1, l-1, (l-1)/2, (l-1)/2, i, j);
+static int32_t Dyy(const Integral_Image * ii_img, uint64_t i, uint64_t j, uint8_t scale){
+    uint64_t b1 = box_filter(ii_img, -(scale - 1), scale - 1, -(3 * scale - 1)/2, (3 * scale - 1)/2, i, j);
+    uint64_t b2 = box_filter(ii_img, -(scale - 1), scale - 1, -(scale - 1)/2, (scale - 1)/2, i, j);
 
-    //assert((b1 - 3*b2) < 256);
-    if(b1 < 3*b2) return 0;
-    else if(b1 - 3*b2 > 255) return 255;
+    return b1 - (int32_t)3*b2;
+}
 
-    return (uint8_t)(b1 - 3*b2);
-}*/
+static int32_t Dxx(const Integral_Image* ii_img, uint64_t i, uint64_t j, uint8_t scale){
+    uint64_t b1 = box_filter(ii_img, -(3 * scale - 1)/2, (3 * scale - 1)/2, -(scale - 1), scale - 1, i, j);
+    uint64_t b2 = box_filter(ii_img, -(scale - 1)/2, (scale - 1)/2, -(scale - 1), scale - 1, i, j);
+
+    return b1 - (int32_t)3*b2;
+}
+
+static int32_t Dxy(const Integral_Image* ii_img, uint64_t i, uint64_t j, uint8_t scale){
+    uint64_t b1 = box_filter(ii_img, 1, scale, -scale, -1, i, j);
+    uint64_t b2 = box_filter(ii_img, -scale, -1, -scale, -1, i, j);
+    uint64_t b3 = box_filter(ii_img, -scale, -1, 1, scale, i, j);
+    uint64_t b4 = box_filter(ii_img, 1, scale, 1, scale, i, j);
+
+
+    return (b1 - (int32_t)b2) + (b3 - (int32_t)b4);
+}
+
 
 static int32_t convolution(const Image * img, uint64_t i, uint64_t j, uint8_t scale, uint8_t width,
                            int8_t* filter, uint8_t w_half, uint8_t h_half){
@@ -647,7 +721,14 @@ static int8_t* get_Dxy_filter(uint8_t scale){
     return buf;    
 }
 
-long double * det_of_hessian(const Image * img, uint8_t scale){    
+typedef struct doh {
+    long double * buf;
+    uint64_t width;
+    uint64_t height;
+    uint8_t scale;
+} DoH;
+
+DoH * det_of_hessian(const Image * img, uint8_t scale){    
     assert(img != NULL);
 
     if(3 * scale > img->width || 3 * scale > img->height){
@@ -655,7 +736,11 @@ long double * det_of_hessian(const Image * img, uint8_t scale){
         return NULL;
     }
 
-    long double* det = malloc(img->image_size * sizeof(long double));
+    long double* det = malloc(img->width * img->height * sizeof(long double));
+    if(det == NULL){
+        fprintf(stderr, "Unable to allocate memory.\n");
+        return NULL;
+    }
 
     int8_t * dxx = get_Dxx_filter(scale);
     uint8_t dxx_width = 3 * scale;
@@ -664,13 +749,11 @@ long double * det_of_hessian(const Image * img, uint8_t scale){
     int32_t dxx_val = 0;
 
 
-
     int8_t * dyy = get_Dyy_filter(scale);
     uint8_t dyy_width = 2 * scale - 1;
     uint8_t dyy_w_half = scale - 1;
     uint8_t dyy_h_half = (3 * scale - 1)/2;
     int32_t dyy_val = 0;
-
 
 
     int8_t * dxy = get_Dxy_filter(scale);
@@ -695,20 +778,76 @@ long double * det_of_hessian(const Image * img, uint8_t scale){
     free(dxy);
     free(dxx);
 
-    return det;
+    DoH * d = malloc(sizeof(DoH));
+    if(d == NULL){
+        fprintf(stderr, "Unable to allocate memory for DoH.\n");
+        return NULL;
+    }
+
+    d->width = img->width;
+    d->height = img->height;
+    d->scale = scale;
+    d->buf = det;
+
+    return d;
 }   
 
-static bool is_maximum_3x3x3(uint64_t width, uint64_t height, const long double* dets[3], 
-                             uint64_t x, uint64_t y){
+static DoH * det_of_hessiani(const Integral_Image * img, uint8_t scale){    
+    assert(img != NULL);
 
-    long double center = dets[1][i_img(width, x, y)];
+    if(3 * scale > img->width || 3 * scale > img->height){
+        fprintf(stderr, "Image too small.\n");
+        return NULL;
+    }
+
+    long double* det = malloc(img->width * img->height * sizeof(long double));
+    if(det == NULL){
+        fprintf(stderr, "Unable to allocate memory.\n");
+        return NULL;
+    }
+
+    int32_t dxx_val = 0;
+    int32_t dyy_val = 0;
+    int32_t dxy_val = 0;
+
+    for(uint64_t j = 0; j < img->height; j++){
+        for(uint64_t i = 0; i < img->width; i++){
+
+            dxy_val = Dxy(img, i, j, scale);
+            dxx_val = Dxx(img, i, j, scale);
+            dyy_val = Dyy(img, i, j, scale);
+
+            det[i_img(img->width, i, j)] = 1.0/(scale * scale * scale * scale) * ((long double)dxx_val * dyy_val 
+                                                                                 - (0.912 * dxy_val) * (0.912 * dxy_val));
+        }
+    }
+
+    DoH * d = malloc(sizeof(DoH));
+    if(d == NULL){
+        fprintf(stderr, "Unable to allocate memory for DoH.\n");
+        return NULL;
+    }
+
+    d->width = img->width;
+    d->height = img->height;
+    d->scale = scale;
+    d->buf = det;
+
+    return d;
+}
+
+static bool is_maximum_3x3x3(DoH* dets[3], uint64_t x, uint64_t y){
+
+    uint64_t width = dets[1]->width;
+    uint64_t height = dets[1]->height;
+    long double center = dets[1]->buf[i_img(width, x, y)];
     for(int8_t k = 0; k < 3; k++){
         for(int8_t j = -1; j <= 1; j++){
             for(int8_t i = -1; i <= 1; i++){
-                if(k == 1 && i == 0 && j = 0) continue;
+                if(k == 1 && i == 0 && j == 0) continue;
                 if((x == 0 && i == -1) || (x + i >= width) || (y == 0 && j == -1) || (y + j >= height)) continue;
 
-                if(dets[k][i_img(width, x + i, y + j)] > center) return false;
+                if(dets[k]->buf[i_img(width, x + i, y + j)] > center) return false;
 
             }
         }
@@ -717,38 +856,65 @@ static bool is_maximum_3x3x3(uint64_t width, uint64_t height, const long double*
     return true;
 }
 
-static key_points(uint8_t ocatave, uint8_t index, uint64_t threshold, 
-                  uint64_t width, uint64_t height, 
-                  const long double* dets[3], Slist* sl){
+static void key_points(uint64_t threshold, DoH* dets[3], SList* sl){
     
-    for(uint64_t j = 0; j < width; j++){
-        for(uint64_t i = 0; i < height; i++){
-            if(dets[1][i_img(width, i, j)] <= threshold) continue;
-            if(!is_maximum_3x3x3(width, height, dets, i, j)) continue;
-            
+    uint64_t width = dets[1]->width;
+    uint64_t height = dets[1]->height;
+    uint8_t scale = dets[1]->scale;
+
+    for(uint64_t j = 0; j < height; j++){
+        for(uint64_t i = 0; i < width; i++){
+            if(dets[1]->buf[i_img(width, i, j)] <= threshold) continue;
+            if(!is_maximum_3x3x3(dets, i, j)) continue;
+            append_list(sl, create_node(i, j, scale));
         }
     }
 
 }
 
-Slist * interest_points(const * Image img){
-    const uint8_t max_octave = 4;
-    const uint8_t max_index = 4;
+SList * interest_points(const Image * img){
+#define max_octave 4
+#define max_index 4
+#define max_scales 10
 
-    const uint8_t max_scales = 10;
-    const uint8_t scales[max_scales] = {3, 5, 7, 9, 13, 17, 25, 33, 49, 65};
+    uint8_t scales[max_scales] = {3, 5, 7, 9, 13, 17, 25, 33, 49, 65};
+    uint8_t ocatves[max_octave][max_index] = {
+        {0, 1, 2, 3},
+        {1, 3, 4, 5},
+        {3, 5, 6, 7},
+        {5, 7, 8, 9}
+    };
 
     //calculate dets
-    const long double* dets[10]; 
-    for(uint8_t i = 0; i < max_scales; i++) dets[i] = det_of_hessian(img, scales[i]);
+    DoH* dets[10];
+    Integral_Image* ii = create_integral_image(img); 
+    for(uint8_t i = 0; i < max_scales; i++) dets[i] = det_of_hessiani(ii, scales[i]);
  
-    Slist* key_point_list = create_linked_list();
+    SList* key_point_list = create_linked_list();
 
     //Add key_points
-
+    for(uint8_t j = 0; j < max_octave; j++){
+        for(uint8_t i = 1; i <= 2; i++){
+            key_points(1000,  
+                (DoH *[3]){
+                    dets[ocatves[j][i - 1]],
+                    dets[ocatves[j][i]],
+                    dets[ocatves[j][i + 1]]
+                },
+            key_point_list);
+        }
+    }
 
     //Free the scales
-    for(uint8_t i = 0; i < max_scales; i++) free(dets[i]);
+    for(uint8_t i = 0; i < max_scales; i++) {
+        free(dets[i]->buf);
+        free(dets[i]);
+    }
 
-    return Slist;
+    destroy_integral_image(ii);
+    return key_point_list;
+
+#undef max_octave
+#undef max_index
+#undef max_scales
 }

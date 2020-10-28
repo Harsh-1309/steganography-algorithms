@@ -20,6 +20,7 @@ typedef struct uint8_quad {
 typedef struct node {
     uint64_t x;
     uint64_t y;
+    uint8_t l;
     struct node* nxt;
 } Node;
 
@@ -64,6 +65,7 @@ extern void write_bits(wBit_stream * restrict stream, uint8_t bits, uint8_t k);
 
 extern SList* create_linked_list();
 extern void delete_linked_list(SList* l);
-extern void append_list(SList* l, uint64_t x, uint64_t y);
+extern Node* create_node(uint64_t x, uint64_t y, uint8_t l);
+extern void append_list(SList* l, Node* node);
 
 #endif

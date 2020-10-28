@@ -37,14 +37,17 @@ extern void free_image(Image* img);
 extern uint8_t get_pixel(const Image* img, uint64_t x, uint64_t y, uint8_t channel);
 extern void set_pixel(Image* img, uint64_t x, uint64_t y, uint8_t channel, uint8_t value);
 
+extern uint64_t get_ipixel(const Integral_Image* img, uint64_t x, uint64_t y);
+extern void set_ipixel(Integral_Image* img, uint64_t x, uint64_t y, uint64_t value);
+
 extern Image convert_to_greyscale(const Image* img);
 extern Image fuzzy_edge_detector(const Image* img);
 extern Image canny_edge_detector(const Image* img);
 extern Image hybrid_edge_detector(const Image* img);
 extern Integral_Image* create_integral_image(const Image * img);
 extern void destroy_integral_image(Integral_Image * ii_img);
-extern long double * det_of_hessian(const Image * img, uint8_t octave, uint8_t index);
-extern Slist * interest_points(const * Image img);
+//extern long double * det_of_hessian(const Image * img, uint8_t scale);
+extern SList * interest_points(const Image * img);
 
 
 #endif

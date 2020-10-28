@@ -313,12 +313,21 @@ void delete_linked_list(SList* l){
     free(l);
 }
 
-void append_list(SList* l, uint64_t x, uint64_t y){
+extern Node* create_node(uint64_t x, uint64_t y, uint8_t l){
     Node* node = malloc(sizeof(Node));
+    if(node == NULL){
+        fprintf(stderr, "Unable to create a node.\n");
+        return NULL;
+    }
+
     node->x = x;
     node->y = y;
+    node->l = l;
     node->nxt = NULL;
-    
+    return node;
+}
+
+void append_list(SList* l, Node* node){
     l->size++;
     
     if(l->head == NULL){
