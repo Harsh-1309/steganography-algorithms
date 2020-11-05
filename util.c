@@ -92,6 +92,18 @@ bool is_power_2(uint8_t p){
     return (p != 0) && !(p & (p - 1));
 }
 
+uint64_t largest_power_2(uint64_t num){
+    if((num & (num - 1)) == 0){
+        return num;    
+    }
+
+    while((num & (num-1)) != 0){ 
+        num = num & (num-1);
+    }
+
+    return num;
+}
+
 typedef struct read_bit_stream {
     const char * buffer;
     uint32_t buf_len;

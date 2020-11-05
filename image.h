@@ -21,13 +21,14 @@ typedef struct integral_image{
 typedef struct{
     uint64_t width;
     uint64_t height;
-    int8_t channels;
+    uint8_t channels;
     uint8_t* img_p;
     uint64_t image_size;
     enum image_creator ic;
 } Image;
 
 extern Image load_image(const char* img_path);
+extern Image create_empty_image(uint64_t width, uint64_t height, uint8_t channels);
 extern void write_png(const char* img_path, Image img);
 extern void free_image(Image* img);
 //color:
@@ -46,8 +47,8 @@ extern Image canny_edge_detector(const Image* img);
 extern Image hybrid_edge_detector(const Image* img);
 extern Integral_Image* create_integral_image(const Image * img);
 extern void destroy_integral_image(Integral_Image * ii_img);
-//extern long double * det_of_hessian(const Image * img, uint8_t scale);
-extern SList * interest_points(const Image * img);
-
+extern SList * interest_points(const Image * img, int32_t threshold);
+extern long double* cdf_9_7(const Image* img);
+extern Image icdf_9_7(long double * buf, uint64_t width, uint64_t height);
 
 #endif

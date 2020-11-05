@@ -45,6 +45,7 @@ extern uint8_t max(uint8_t a, uint8_t b);
 extern uint8_t max_4(uint8_t a, uint8_t b, uint8_t c, uint8_t d);
 extern uint8_t power_2(uint8_t k);
 extern uint8_t u8_fclamp(float f);
+extern uint64_t largest_power_2(uint64_t num);
 extern uint8_t k_bit_lsb(uint8_t pixel, uint8_t value, uint8_t k);
 extern uint8_t recover_k_bit_lsb(uint8_t pixel, uint8_t k);
 
