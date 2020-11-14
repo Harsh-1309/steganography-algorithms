@@ -26,49 +26,27 @@ int main(int argc, char** argv){
            exit(1);
         }
 
+        /*
+        if(str_case_cmp(steg_algo_used, "simple_lsb") == true){
+            printf("SIMPLE LSB\n");            
+            simple_lsb_encrypt(st_img, strlen(msg), msg);
+            
+            char output[strlen(img_path) + 1 + 3];
+            string_cpy(output, strlen(img_path), img_path);
+            append_en_to_image_name(output, strlen(img_path), 's');
+            write_png(output, st_img);
+        }else 
+        */
+
+ 
+
         const char* steg_algo_used = argv[2];
         const char* msg = argv[3];
         const char* img_path = argv[4];
-
+    
         printf("Image path: %s\n", img_path);
 
-        Image img = load_image(img_path);
-        if(img.channels > 2){
-            Image grey = convert_to_greyscale(&img);
-            free_image(&img);
-            img = grey;
-        }
-
-        long double* ld = cdf_9_7(&img);
-        Image out =  icdf_9_7(ld, 512, 512);
-        free(ld);
-        //Integral_Image* ii = create_integral_image(&grey);
-        /*SList* l = interest_points(&grey, 5000);
-        fprintf(stderr, "%lu\n", l->size);
-        Image im = {grey.width, grey.height, 4, NULL, grey.width * grey.height * 4, 0};
-        uint8_t* b = malloc(grey.width * grey.height * 4);
-        im.img_p = b;
-        for(uint64_t j = 0; j < im.height; j++){
-            for(uint64_t i = 0; i < im.width; i++){
-                set_pixel(&im, i, j, 0, get_pixel(&grey, i, j, 0));
-                set_pixel(&im, i, j, 1, get_pixel(&grey, i, j, 0));
-                set_pixel(&im, i, j, 2, get_pixel(&grey, i, j, 0));
-                set_pixel(&im, i, j, 3, 255);
-            }
-        }
-
-        Node* nxt;
-        Node* cur = l->head;
-        for(uint64_t i = 0; i < l->size; i++, cur = nxt){
-            nxt = cur->nxt;
-            set_pixel(&im, cur->x, cur->y, 0, 255);
-        }*/
-
-        free_image(&img);
-
-        write_png(".//temp4.png", out);
-        free_image(&out);
-        return 0;
+        
         if(str_case_cmp(steg_algo_used, "PVD_greyscale") == true){
             printf("PVD greyscale\n");
             Partitions* par = create_partitions(6, 8, 8, 16, 32, 64, 128);
@@ -78,7 +56,7 @@ int main(int argc, char** argv){
             char output[strlen(img_path) + 1 + 3];
             string_cpy(output, strlen(img_path), img_path);
             append_en_to_image_name(output, strlen(img_path), 'p');
-
+            
             write_png(output, *(eg.st_img));
             destroy_e_pvd_grey_struct(&eg);
             destroy_partitions(par);  

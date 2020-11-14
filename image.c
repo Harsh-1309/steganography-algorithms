@@ -1130,3 +1130,29 @@ Image icdf_9_7(long double * buf, uint64_t width, uint64_t height){
 
     return output_img;
 }
+
+long double PSNR(const Image* steg, const Image* cov){
+    uint8_t max = 255;
+    uint64_t height = cov->height;
+    uint64_t width = cov->width;
+
+    /*for(uint64_t j = 0; j < height; j++){
+        for(uint64_t i = 0; i < width; i++){
+            if(get_pixel(cov, i, j, 0) > max)
+                max = get_pixel(cov, i, j, 0);
+        }      
+    }*/
+
+    long double MSE = 0.0;    
+    
+    for(uint64_t j = 0; j < height; j++){
+        for(uint64_t i = 0; i < width; i++){
+            MSE += (get_pixel(steg, i, j, 0) - get_pixel(cov, i, j, 0)) *  (get_pixel(steg, i, j, 0) - get_pixel(cov, i, j, 0)); 
+        }      
+    }
+
+    MSE *= 1/((long double)height*width);
+
+    return log10((max * max)/MSE) * 10;
+
+}

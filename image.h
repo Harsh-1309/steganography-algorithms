@@ -51,4 +51,5 @@ extern SList * interest_points(const Image * img, int32_t threshold);
 extern long double* cdf_9_7(const Image* img);
 extern Image icdf_9_7(long double * buf, uint64_t width, uint64_t height);
 
+extern long double PSNR(const Image* steg, const Image* cov);
 #endif
